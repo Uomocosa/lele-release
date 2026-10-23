@@ -16,6 +16,12 @@ pub fn clean_manifest(fleet: &Fleet, manifest: &Path, input: &str) -> Result<Str
         .parent()
         .unwrap_or_else(|| Path::new("."))
         .to_path_buf();
+    let current = fleet
+        .repos
+        .iter()
+        .find(|repo| manifest.starts_with(&repo.dir))
+        .map(|repo| repo.name.clone())
+        .unwrap_or_default();
     let mut touched = false;
     for section in [
         "dependencies",
@@ -23,7 +29,7 @@ pub fn clean_manifest(fleet: &Fleet, manifest: &Path, input: &str) -> Result<Str
         "build-dependencies",
         "workspace.dependencies",
     ] {
-        touched |= rewrite(fleet, &mut document, section, &base)?;
+        touched |= rewrite(fleet, &mut document, section, &base, &current)?;
     }
     Ok(if touched {
         document.to_string()
@@ -38,6 +44,7 @@ fn rewrite(
     document: &mut DocumentMut,
     section: &str,
     base: &Path,
+    current: &str,
 ) -> Result<bool, Error> {
     let Some(table) = table_mut(document, section) else {
         return Ok(false);
@@ -54,6 +61,9 @@ fn rewrite(
         let Some(dependency) = resolve(fleet, base, &path) else {
             continue;
         };
+        if dependency.name == current {
+            continue;
+        }
         let (is_tag, value) = pinned(dependency)?;
         let url = dependency.url.trim_end_matches(".git").to_string();
         entry.remove("path");

@@ -5,6 +5,11 @@ use crate::repo::Repo;
 pub fn ensure_ready(repo: &Repo) -> Result<(), Error> {
     let _ = Git::output(&repo.dir, &["fetch", "--quiet", "origin"]);
     let status = Git::output(&repo.dir, &["status", "--porcelain"])?;
+    let lock_only = !status.is_empty() && status.lines().all(|line| line.ends_with("Cargo.lock"));
+    if lock_only {
+        let _ = Git::run(&repo.dir, &["checkout", "--", "Cargo.lock"]);
+    }
+    let status = Git::output(&repo.dir, &["status", "--porcelain"])?;
     if !status.is_empty() {
         return Err(Error::Refused(format!(
             "{}: working tree is not clean:\n{status}",

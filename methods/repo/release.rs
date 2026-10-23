@@ -24,7 +24,12 @@ pub fn release(repo: &Repo, next: &Version, fleet: &Fleet) -> Result<(), Error> 
 fn publish(repo: &Repo, next: &Version, tag: &str) -> Result<(), Error> {
     Git::run(
         &repo.dir,
-        &["commit", "-m", &format!("chore(release): {next}")],
+        &[
+            "commit",
+            "--no-verify",
+            "-m",
+            &format!("chore(release): {next}"),
+        ],
     )?;
     Git::run(
         &repo.dir,

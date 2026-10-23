@@ -4,6 +4,7 @@ use crate::repo::Repo;
 
 pub fn ensure_ready(repo: &Repo) -> Result<(), Error> {
     let _ = Git::output(&repo.dir, &["fetch", "--quiet", "origin"]);
+    gate(repo)?;
     let status = Git::output(&repo.dir, &["status", "--porcelain"])?;
     let lock_only = !status.is_empty() && status.lines().all(|line| line.ends_with("Cargo.lock"));
     if lock_only {
@@ -47,6 +48,27 @@ pub fn ensure_ready(repo: &Repo) -> Result<(), Error> {
             )))
         }
     })
+}
+
+// needed helper: the gate that does not run cargo (a release commit is metadata only)
+fn gate(repo: &Repo) -> Result<(), Error> {
+    for recipe in ["fmt", "lint"] {
+        let output = std::process::Command::new("just")
+            .arg(recipe)
+            .current_dir(&repo.dir)
+            .output()
+            .map_err(|error| Error::Io {
+                message: format!("{}: cannot run `just {recipe}`: {error}", repo.name),
+            })?;
+        if !output.status.success() {
+            return Err(Error::Refused(format!(
+                "{}: `just {recipe}` failed\n{}",
+                repo.name,
+                String::from_utf8_lossy(&output.stderr)
+            )));
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]

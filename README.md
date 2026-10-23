@@ -132,8 +132,11 @@ Per repo, in order:
 2. bump the version in [package] or [workspace.package]
 3. normalise Cargo.lock: every fleet dependency entry gets the git source of
    its dependency's new tag (offline; the SHA comes from the tag itself)
-4. git add (the version file + Cargo.lock) · commit "chore(release): X.Y.Z"
-   — the clean filter writes the pins here
+4. git add (every manifest + Cargo.lock) · commit "chore(release): X.Y.Z"
+   — the clean filter writes the pins here. The commit is metadata-only and is
+   created with `--no-verify`: the commit hooks run cargo, which rewrites a
+   path-form lock mid-hook. Preflight runs `just fmt` and `just lint` instead,
+   and the push runs the repo's pre-push hooks (tests) as usual.
 5. git tag -a vX.Y.Z
 6. git push --atomic origin main vX.Y.Z          (pre-push hooks run here)
 7. on rejection: reset --hard origin/main and delete the local tag
@@ -180,7 +183,7 @@ One version and one `vX.Y.Z` tag per repo, including repos with several crates
 |---|---|
 | `Cargo.toml` shows `tag = …` in the working tree | filter not installed, or the sibling checkout is missing: `just setup` |
 | `git status` clean but the file has paths | correct: the filter cleans on read |
-| `Cargo.lock` dirty after a build | expected in path mode; `release` restores and normalises it |
+| `Cargo.lock` dirty after a build | expected in path mode; preflight restores it and the release rewrites it in git form |
 | `release` refuses: working tree not clean | commit or stash first; the tool only creates the release commit |
 | `release` refuses: version does not match tag | the repo drifted: bump the manifest to the tag, or release it from a clean state |
 | `release` refuses: not in sync | push or pull; the tool never releases an unpushed tree |

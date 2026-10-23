@@ -54,7 +54,7 @@ dependencies = [
 
 [[package]]
 name = "atomic-delegate-macros"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "lele-snake-case",
  "proc-macro2",
@@ -196,7 +196,7 @@ dependencies = [
 
 [[package]]
 name = "lele-snake-case"
-version = "0.0.3"
+version = "0.0.4"
 
 [[package]]
 name = "libc"

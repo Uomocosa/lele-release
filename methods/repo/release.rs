@@ -140,17 +140,21 @@ fn git_source(dependency: &Repo) -> Result<String, Error> {
 
 // needed helper: stage only the version file and the lock
 fn stage(repo: &Repo) -> Result<(), Error> {
-    let Ok(relative) = repo.version_manifest.strip_prefix(&repo.dir) else {
-        return Err(Error::Refused(format!(
-            "{}: version manifest is outside the repo",
-            repo.name
-        )));
-    };
-    let version_path = relative.display().to_string();
-    let mut args = vec!["add", "--", version_path.as_str()];
-    if repo.dir.join("Cargo.lock").exists() {
-        args.push("Cargo.lock");
+    let mut paths: Vec<String> = Vec::new();
+    for manifest in &repo.manifests {
+        let Ok(relative) = manifest.strip_prefix(&repo.dir) else {
+            return Err(Error::Refused(format!(
+                "{}: manifest is outside the repo",
+                repo.name
+            )));
+        };
+        paths.push(relative.display().to_string());
     }
+    if repo.dir.join("Cargo.lock").exists() {
+        paths.push(String::from("Cargo.lock"));
+    }
+    let mut args = vec!["add", "--"];
+    args.extend(paths.iter().map(String::as_str));
     Git::run(&repo.dir, &args)
 }
 

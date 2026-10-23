@@ -98,10 +98,10 @@ fn resolve<'a>(fleet: &'a Fleet, base: &Path, path: &str) -> Option<&'a Repo> {
 
 // needed helper: the released tag to pin, or the pushed revision while unreleased
 fn pinned(dependency: &Repo) -> Result<(bool, String), Error> {
-    let head = Git::output(&dependency.dir, &["rev-parse", "HEAD"])?;
-    if let (Some(tag), Some(0)) = (dependency.latest_tag()?, dependency.commits_since_tag()?) {
+    if let Some(tag) = dependency.latest_tag()? {
         return Ok((true, tag));
     }
+    let head = Git::output(&dependency.dir, &["rev-parse", "HEAD"])?;
     let pushed = Git::output(&dependency.dir, &["rev-parse", "origin/main"]).unwrap_or(head);
     Ok((false, pushed))
 }

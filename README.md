@@ -66,8 +66,9 @@ Cargo.toml    path = "../lele-rust-linter/…"   tag = "v0.0.4"
   checkout exists. If it does not exist (plain clone, CI), the file is passed
   through unchanged, which is exactly the online form.
 - **clean** runs on `git add`: a `path` that points into another fleet repo
-  becomes a `git` pin at that repo's latest tag, or a `rev` of `origin/main`
-  while the dependency has unreleased commits.
+  becomes a `git` pin at that repo's latest tag (a `rev` of `origin/main` only
+  when the dependency has never been tagged). Because pins move only at a
+  release, committing inside a dependency never dirties its dependents.
 - Because git compares `clean(worktree)` with the index, `git status` stays
   clean even though the working tree differs from the commit.
 
@@ -149,8 +150,8 @@ The tool never force-pushes, never moves a tag, and never rebases.
 
 | Situation | Committed form |
 |---|---|
-| dependency released | `tag = "vX.Y.Z"` |
-| dependency has unreleased commits | `rev = "<origin/main sha>"` |
+| dependency has a release tag | `tag = "vX.Y.Z"` |
+| dependency has never been tagged | `rev = "<origin/main sha>"` |
 | same repo (workspace member) | `path = "crates/…"` |
 | local development | `path = "../sibling/…"` (smudged, never committed) |
 
@@ -182,6 +183,7 @@ One version and one `vX.Y.Z` tag per repo, including repos with several crates
 | `release` refuses: version does not match tag | the repo drifted: bump the manifest to the tag, or release it from a clean state |
 | `release` refuses: not in sync | push or pull; the tool never releases an unpushed tree |
 | `release` stopped midway | fix the failure and run the same command; finished repos are skipped |
+| dependent needs a newer, unreleased dependency | commit both, then release in the same session: the release re-pins the dependent |
 | `--only` left repos behind | intended; the next full release converges |
 | filter silently missing after moving the workspace | the include file is gone; re-run `just setup` |
 | push rejected by a hook | the release rolled back locally; fix the hook failure and re-run |

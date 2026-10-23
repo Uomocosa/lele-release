@@ -17,10 +17,12 @@ pub fn try_from_path(root: &Path) -> Result<Fleet, Error> {
         if !dir.join(".git").exists() {
             continue;
         }
-        repos.push(discover_repo(&dir)?);
+        if let Some(repo) = discover_repo(&dir)? {
+            repos.push(repo);
+        }
     }
     repos.sort_by(|left, right| left.name.cmp(&right.name));
-    let dependencies = dependency_edges(&repos)?;
+    let dependencies = dependency_edges(&repos);
     Ok(Fleet {
         root: root.to_path_buf(),
         repos,
@@ -29,18 +31,20 @@ pub fn try_from_path(root: &Path) -> Result<Fleet, Error> {
 }
 
 // needed helper: one repo from its directory (url, packages, version, version manifest)
-fn discover_repo(dir: &Path) -> Result<Repo, Error> {
+fn discover_repo(dir: &Path) -> Result<Option<Repo>, Error> {
     let name = dir
         .file_name()
         .and_then(|name| name.to_str())
         .unwrap_or("unknown")
         .to_string();
     let url = Git::output(dir, &["remote", "get-url", "origin"]).unwrap_or_default();
-    let manifests = package_manifests(dir)?;
+    let manifests = package_manifests(dir);
     let mut packages = Vec::new();
     let mut workspace: Option<(PathBuf, Version)> = None;
     for manifest in &manifests {
-        let document = read_manifest(manifest)?;
+        let Ok(document) = read_manifest(manifest) else {
+            continue;
+        };
         if let Some(version) = workspace_version(&document) {
             workspace = Some((manifest.clone(), version));
         }
@@ -56,11 +60,14 @@ fn discover_repo(dir: &Path) -> Result<Repo, Error> {
             });
         }
     }
+    if packages.is_empty() && workspace.is_none() {
+        return Ok(None);
+    }
     let (version_manifest, version) = match workspace {
         Some(workspace_version) => workspace_version,
         None => package_version(&packages, &name)?,
     };
-    Ok(Repo {
+    Ok(Some(Repo {
         name,
         dir: dir.to_path_buf(),
         url,
@@ -68,17 +75,19 @@ fn discover_repo(dir: &Path) -> Result<Repo, Error> {
         manifests,
         version_manifest,
         version,
-    })
+    }))
 }
 
 // needed helper: manifests that belong to the repo: its root plus workspace members
-fn package_manifests(dir: &Path) -> Result<Vec<PathBuf>, Error> {
+fn package_manifests(dir: &Path) -> Vec<PathBuf> {
     let root = dir.join("Cargo.toml");
     let mut out = Vec::new();
     if !root.exists() {
-        return Ok(out);
+        return out;
     }
-    let document = read_manifest(&root)?;
+    let Ok(document) = read_manifest(&root) else {
+        return out;
+    };
     out.push(root);
     let members = document
         .get("workspace")
@@ -94,7 +103,7 @@ fn package_manifests(dir: &Path) -> Result<Vec<PathBuf>, Error> {
             }
         }
     }
-    Ok(out)
+    out
 }
 
 // needed helper: expand one workspace member pattern (literal path or one-level `/*`)
@@ -184,17 +193,16 @@ fn package_version(
     Ok((first.manifest.clone(), version))
 }
 
-// needed helper: repo-level dependency edges, derived from git pins to sibling repos
-fn dependency_edges(repos: &[Repo]) -> Result<Vec<__basic__::structs::Dependency>, Error> {
+// needed helper: repo-level dependency edges, from git pins and local path pins
+fn dependency_edges(repos: &[Repo]) -> Vec<__basic__::structs::Dependency> {
     let mut edges: Vec<__basic__::structs::Dependency> = Vec::new();
     for repo in repos {
         for manifest in &repo.manifests {
-            let document = read_manifest(manifest)?;
-            for url in git_dependency_urls(&document) {
-                let Some(target) = repos.iter().find(|candidate| candidate.matches_url(&url))
-                else {
-                    continue;
-                };
+            let Ok(document) = read_manifest(manifest) else {
+                continue;
+            };
+            let base = manifest.parent().unwrap_or_else(|| Path::new("."));
+            for target in dependency_targets(repos, base, &document) {
                 if target.name == repo.name {
                     continue;
                 }
@@ -208,26 +216,18 @@ fn dependency_edges(repos: &[Repo]) -> Result<Vec<__basic__::structs::Dependency
             }
         }
     }
-    Ok(edges)
+    edges
 }
 
-// needed helper: git URLs declared in any dependency table of one manifest
-fn git_dependency_urls(document: &DocumentMut) -> Vec<String> {
-    let mut urls = Vec::new();
+// needed helper: the fleet repos one manifest depends on, whichever pin form is on disk
+fn dependency_targets<'a>(repos: &'a [Repo], base: &Path, document: &DocumentMut) -> Vec<&'a Repo> {
+    let mut targets = Vec::new();
     for section in ["dependencies", "dev-dependencies", "build-dependencies"] {
         if let Some(table) = document
             .get(section)
             .and_then(toml_edit::Item::as_table_like)
         {
-            for (_, item) in table.iter() {
-                if let Some(url) = item
-                    .as_table_like()
-                    .and_then(|entry| entry.get("git"))
-                    .and_then(toml_edit::Item::as_str)
-                {
-                    urls.push(url.to_string());
-                }
-            }
+            collect_targets(repos, base, table, &mut targets);
         }
     }
     if let Some(table) = document
@@ -236,17 +236,64 @@ fn git_dependency_urls(document: &DocumentMut) -> Vec<String> {
         .and_then(|workspace| workspace.get("dependencies"))
         .and_then(toml_edit::Item::as_table_like)
     {
-        for (_, item) in table.iter() {
-            if let Some(url) = item
-                .as_table_like()
-                .and_then(|entry| entry.get("git"))
-                .and_then(toml_edit::Item::as_str)
-            {
-                urls.push(url.to_string());
-            }
+        collect_targets(repos, base, table, &mut targets);
+    }
+    targets
+}
+
+// needed helper: resolve every entry of one dependency table to a fleet repo
+fn collect_targets<'a>(
+    repos: &'a [Repo],
+    base: &Path,
+    table: &dyn toml_edit::TableLike,
+    targets: &mut Vec<&'a Repo>,
+) {
+    for (_, item) in table.iter() {
+        let Some(entry) = item.as_table_like() else {
+            continue;
+        };
+        let target = entry
+            .get("git")
+            .and_then(toml_edit::Item::as_str)
+            .and_then(|url| repos.iter().find(|repo| repo.matches_url(url)))
+            .or_else(|| {
+                entry
+                    .get("path")
+                    .and_then(toml_edit::Item::as_str)
+                    .and_then(|path| resolve_repo(repos, base, path))
+            });
+        if let Some(repo) = target {
+            targets.push(repo);
         }
     }
-    urls
+}
+
+// needed helper: the fleet repo a local path points at
+fn resolve_repo<'a>(repos: &'a [Repo], base: &Path, path: &str) -> Option<&'a Repo> {
+    let target = normalise(&base.join(path));
+    repos.iter().find(|repo| {
+        repo.packages.iter().any(|package| {
+            package
+                .manifest
+                .parent()
+                .is_some_and(|dir| normalise(dir) == target)
+        })
+    })
+}
+
+// needed helper: lexical `.`/`..` normalisation (paths need not exist)
+fn normalise(path: &Path) -> PathBuf {
+    let mut out = PathBuf::new();
+    for component in path.components() {
+        match component {
+            std::path::Component::ParentDir => {
+                out.pop();
+            }
+            std::path::Component::CurDir => {}
+            other => out.push(other),
+        }
+    }
+    out
 }
 
 // needed helper: attach the path to an i/o error

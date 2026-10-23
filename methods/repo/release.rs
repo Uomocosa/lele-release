@@ -9,7 +9,7 @@ use crate::repo::Repo;
 pub fn release(repo: &Repo, next: &Version, fleet: &Fleet) -> Result<(), Error> {
     let tag = format!("v{next}");
     write_version(repo, next)?;
-    normalise_lock(repo, fleet)?;
+    normalise_lock(repo, fleet, next)?;
     stage(repo)?;
     match publish(repo, next, &tag) {
         Ok(()) => Ok(()),
@@ -82,7 +82,7 @@ fn write_version(repo: &Repo, next: &Version) -> Result<(), Error> {
 }
 
 // needed helper: rewrite fleet entries in Cargo.lock to the released git source
-fn normalise_lock(repo: &Repo, fleet: &Fleet) -> Result<(), Error> {
+fn normalise_lock(repo: &Repo, fleet: &Fleet, next: &Version) -> Result<(), Error> {
     let lock = repo.dir.join("Cargo.lock");
     if !lock.exists() {
         return Ok(());
@@ -110,6 +110,8 @@ fn normalise_lock(repo: &Repo, fleet: &Fleet) -> Result<(), Error> {
             continue;
         };
         if repo.packages.iter().any(|package| package.name == name) {
+            table.insert("version", toml_edit::value(next.to_string()));
+            changed = true;
             continue;
         }
         let Some(dependency) = fleet.repos.iter().find(|candidate| {

@@ -11,7 +11,7 @@ pub fn status(fleet: &Fleet) -> Result<(), Error> {
     println!();
     print_pins(fleet)?;
     println!();
-    print_filter(fleet)?;
+    print_filter(fleet);
     println!();
     print_plan(fleet)
 }
@@ -138,19 +138,15 @@ fn pin_state(fleet: &Fleet, pin: &__basic__::structs::Pin) -> String {
 }
 
 // needed helper: filter installation per repo
-fn print_filter(fleet: &Fleet) -> Result<(), Error> {
-    let mut linked = false;
+fn print_filter(fleet: &Fleet) {
+    let mut missing: Vec<&str> = Vec::new();
     for repo in &fleet.repos {
         let installed =
             Git::output(&repo.dir, &["config", "--get", "filter.lele-pins.clean"]).is_ok();
         let attribute =
             Git::output(&repo.dir, &["check-attr", "filter", "Cargo.toml"]).unwrap_or_default();
-        if fleet
-            .pins(repo)?
-            .iter()
-            .any(|pin| matches!(pin.form, __basic__::enums::PinForm::Path(_)))
-        {
-            linked = true;
+        if !installed || !attribute.contains("lele-pins") {
+            missing.push(&repo.name);
         }
         println!(
             "filter  {:<28} driver: {:<9} attribute: {}",
@@ -163,8 +159,14 @@ fn print_filter(fleet: &Fleet) -> Result<(), Error> {
             }
         );
     }
-    println!("linked: {}", if linked { "yes" } else { "no" });
-    Ok(())
+    if missing.is_empty() {
+        println!("working tree: path form (lele-pins active)");
+    } else {
+        println!(
+            "working tree: pinned form (filter missing: {})",
+            missing.join(", ")
+        );
+    }
 }
 
 // needed helper: what a release right now would do, without doing it

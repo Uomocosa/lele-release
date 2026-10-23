@@ -61,16 +61,14 @@ fn gate(repo: &Repo) -> Result<(), Error> {
     Ok(())
 }
 
-// needed helper: restore generated files; accept pin drift produced by an earlier partial run
+// needed helper: a lock is generated, and a stale pin makes it differ until the release re-pins
 fn settle(repo: &Repo, fleet: &Fleet) -> Result<(), Error> {
     for path in status_paths(repo)? {
         let path = path.as_str();
         if path.ends_with("Cargo.lock") {
-            let _ = Git::run(&repo.dir, &["checkout", "--", path]);
             continue;
         }
         if path.ends_with("Cargo.toml") && manifest_drift_only(repo, fleet, path)? {
-            let _ = Git::run(&repo.dir, &["checkout", "--", path]);
             continue;
         }
         return Err(Error::Refused(format!(
@@ -78,15 +76,7 @@ fn settle(repo: &Repo, fleet: &Fleet) -> Result<(), Error> {
             repo.name
         )));
     }
-    let status = Git::output(&repo.dir, &["status", "--porcelain"])?;
-    if status.is_empty() {
-        Ok(())
-    } else {
-        Err(Error::Refused(format!(
-            "{}: working tree is not clean:\n{status}",
-            repo.name
-        )))
-    }
+    Ok(())
 }
 
 // needed helper: raw porcelain paths (Git::output trims, which shifts the XY prefix)

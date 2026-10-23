@@ -11,20 +11,32 @@ pub fn release(repo: &Repo, next: &Version, fleet: &Fleet) -> Result<(), Error> 
     write_version(repo, next)?;
     normalise_lock(repo, fleet)?;
     stage(repo)?;
+    match publish(repo, next, &tag) {
+        Ok(()) => Ok(()),
+        Err(error) => {
+            rollback(repo, &tag);
+            Err(error)
+        }
+    }
+}
+
+// needed helper: commit, tag, and push atomically
+fn publish(repo: &Repo, next: &Version, tag: &str) -> Result<(), Error> {
     Git::run(
         &repo.dir,
         &["commit", "-m", &format!("chore(release): {next}")],
     )?;
     Git::run(
         &repo.dir,
-        &["tag", "-a", &tag, "-m", &format!("{} {next}", repo.name)],
+        &["tag", "-a", tag, "-m", &format!("{} {next}", repo.name)],
     )?;
-    if let Err(error) = Git::run(&repo.dir, &["push", "--atomic", "origin", "main", &tag]) {
-        let _ = Git::run(&repo.dir, &["reset", "--hard", "origin/main"]);
-        let _ = Git::run(&repo.dir, &["tag", "-d", &tag]);
-        return Err(error);
-    }
-    Ok(())
+    Git::run(&repo.dir, &["push", "--atomic", "origin", "main", tag])
+}
+
+// needed helper: leave the repo exactly as it was before the attempt
+fn rollback(repo: &Repo, tag: &str) {
+    let _ = Git::run(&repo.dir, &["reset", "--hard", "origin/main"]);
+    let _ = Git::run(&repo.dir, &["tag", "-d", tag]);
 }
 
 // needed helper: write the next version into the manifest that owns it

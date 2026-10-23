@@ -34,7 +34,7 @@ hooks:
 
 # Fail fast when the installed binary is not the version this repo expects.
 tools:
-    test "$(lele-release --version)" = "lele-release 0.1.0"
+    test "$(lele-release --version)" = "lele-release 0.0.1"
 
 # Run the tool without installing it.
 run *args:

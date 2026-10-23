@@ -170,7 +170,9 @@ freenet-libp2p-bevy-plugin  atomic-delegate-macros, telegram-bot-helper, lele-be
 ```
 
 One version and one `vX.Y.Z` tag per repo, including repos with several crates
-(the workspace version is the release version).
+(the workspace version is the release version). A new repository starts at
+`0.0.1`, and its **first release tags that version without bumping**
+(`0.0.1 -> 0.0.1`, reason `first release`); later releases bump normally.
 
 ## Troubleshooting
 

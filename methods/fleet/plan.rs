@@ -16,7 +16,8 @@ pub fn plan(
         let Some(repo) = fleet.repos.iter().find(|repo| repo.name == name) else {
             continue;
         };
-        let reason = if repo.latest_tag()?.is_none() {
+        let untagged = repo.latest_tag()?.is_none();
+        let reason = if untagged {
             String::from("first release")
         } else {
             changed
@@ -27,10 +28,15 @@ pub fn plan(
                     |(_, count)| format!("{count} commit(s) since tag"),
                 )
         };
+        let next = if untagged {
+            repo.version.clone()
+        } else {
+            bumped(&repo.version, level)
+        };
         steps.push(__basic__::structs::ReleaseStep {
             repo: name,
             current: repo.version.clone(),
-            next: bumped(&repo.version, level),
+            next,
             reason,
         });
     }

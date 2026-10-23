@@ -1,3 +1,5 @@
+use std::fmt::Write as _;
+
 use semver::Version;
 use toml_edit::DocumentMut;
 
@@ -8,6 +10,7 @@ use crate::repo::Repo;
 pub fn release(repo: &Repo, next: &Version) -> Result<(), Error> {
     let tag = format!("v{next}");
     write_version(repo, next)?;
+    bump_lock_version(repo, next)?;
     stage(repo)?;
     match publish(repo, next, &tag) {
         Ok(()) => Ok(()),
@@ -84,6 +87,38 @@ fn write_version(repo: &Repo, next: &Version) -> Result<(), Error> {
     *field = toml_edit::value(next.to_string());
     std::fs::write(&repo.version_manifest, document.to_string()).map_err(|error| Error::Io {
         message: format!("{}: {error}", repo.version_manifest.display()),
+    })
+}
+
+// needed helper: the lock's own package version must move too, or cargo rewrites it later
+fn bump_lock_version(repo: &Repo, next: &Version) -> Result<(), Error> {
+    let lock = repo.dir.join("Cargo.lock");
+    if !lock.exists() {
+        return Ok(());
+    }
+    let text = std::fs::read_to_string(&lock).map_err(|error| Error::Io {
+        message: format!("{}: {error}", lock.display()),
+    })?;
+    let mut out = String::new();
+    let mut own = false;
+    for line in text.lines() {
+        if line == "[[package]]" {
+            own = false;
+        }
+        if let Some(name) = line
+            .strip_prefix("name = \"")
+            .and_then(|rest| rest.strip_suffix('"'))
+        {
+            own = repo.packages.iter().any(|package| package.name == name);
+        } else if own && line.starts_with("version = ") {
+            let _ = writeln!(out, "version = \"{next}\"");
+            continue;
+        }
+        out.push_str(line);
+        out.push('\n');
+    }
+    std::fs::write(&lock, out).map_err(|error| Error::Io {
+        message: format!("{}: {error}", lock.display()),
     })
 }
 

@@ -35,12 +35,13 @@ just hooks            # install the prek commit/push gates
 just tools            # verify the installed version
 ```
 
-`just setup` writes two things, both machine-local:
+`just setup` writes three things, all machine-local:
 
 | File | Content |
 |---|---|
 | `~/.config/git/lele-pins.gitconfig` | the `filter.lele-pins.clean`/`smudge` commands, rendered from `pins.gitconfig.template` with the absolute binary path |
 | `~/.gitconfig` | one `includeIf "hasconfig:remote.*.url:https://github.com/Uomocosa/**"` pointing at the file above |
+| `<fleet>/bin/` | one shim per fleet tool (`lele-lint`, `lele-bevy-lint`, `lele-function-taxonomy`), rendered from `shim.sh.template` |
 
 It then prints which repos still miss the committed attribute line. Add it once
 per repo (and commit it):
@@ -85,6 +86,39 @@ cargo tree -i lele-bevy-preview         # shows a path source
 A machine without the filter simply checks out pins and behaves like CI. The
 filter never fails a git operation: on any error it passes the content through.
 
+## Fleet tools without installing
+
+The same split as the pins, applied to the tools: committed justfiles call the
+proper command (`lele-lint .`), and on your machine that name resolves to a shim
+in `<fleet>/bin/` that builds the sibling checkout and runs it.
+
+```text
+                 committed justfile        your machine (shim first on PATH)
+lint:            lele-lint .          ->   <fleet>/bin/lele-lint
+                                             cd ../lele-rust-linter && cargo build -p lele-lint
+                                             exec ../lele-rust-linter/target/debug/lele-lint .
+```
+
+- A change in `lele-rust-linter` reaches every repo's `just lint` and commit
+  hooks on the next run, with no `just install`. Cargo rebuilds only when the
+  tool's source changed.
+- The build runs inside the tool's repo, so it uses that repo's toolchain and
+  `target/`, and is shared by every caller.
+- `LELE_USE_INSTALLED=1`, or a missing sibling checkout, runs the installed
+  binary in `~/.cargo/bin` instead. Use it when the tool is mid-edit and does
+  not compile.
+- `lele-release` itself is not shimmed: git runs it as the pins filter on every
+  `git add`, so it stays an installed, stable binary (`just install`).
+
+Activate once, in your shell profile, **before** `~/.cargo/bin`:
+
+```bash
+export PATH="/path/to/fleet/bin:$PATH"
+```
+
+`lele-release status` shows, per tool, whether the shim is active or shadowed;
+`just tools` in a tool repo prints the resolved binary and its version.
+
 ## Commands
 
 | Command | What it does |
@@ -93,7 +127,7 @@ filter never fails a git operation: on any error it passes the content through.
 | `lele-release release <patch\|minor\|major>` | preflight → bump → pin → commit → tag → atomic push, in dependency order |
 | `--only a,b` / `--exclude c` | restrict the release set (mutually exclusive); a full run is the default |
 | `--dry-run` | print the plan and the affected set, write nothing |
-| `lele-release setup` | install the git filter for this machine |
+| `lele-release setup` | install the git filter and the `<fleet>/bin` tool shims for this machine |
 | `lele-release pins clean\|smudge` | internal, invoked by git; hidden from help |
 
 Exit codes: `0` success or nothing to do, `1` failure (preflight, hook, push).
@@ -192,6 +226,8 @@ One version and one `vX.Y.Z` tag per repo, including repos with several crates
 | `release` stopped midway | fix the failure and run the same command; finished repos are skipped |
 | dependent needs a newer, unreleased dependency | commit both, then release in the same session: the release re-pins the dependent |
 | `--only` left repos behind | intended; the next full release converges |
+| `just lint` misses a rule you just added to the linter | the installed binary ran: put `<fleet>/bin` before `~/.cargo/bin` on PATH (`lele-release status`) |
+| hooks fail because the linter is mid-edit | `LELE_USE_INSTALLED=1 git commit …`, or fix the linter first |
 | filter silently missing after moving the workspace | the include file is gone; re-run `just setup` |
 | push rejected by a hook | the release rolled back locally; fix the hook failure and re-run |
 

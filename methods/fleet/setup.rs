@@ -1,3 +1,4 @@
+use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 
 use crate::Error;
@@ -23,6 +24,7 @@ pub fn setup(fleet: &Fleet) -> Result<(), Error> {
         message: format!("{}: {error}", config.display()),
     })?;
     include_pointer(&home)?;
+    write_shims(fleet)?;
     println!("filter definition: {}", config.display());
     println!("binary:            {binary}");
     println!();
@@ -42,6 +44,63 @@ pub fn setup(fleet: &Fleet) -> Result<(), Error> {
             }
         );
     }
+    Ok(())
+}
+
+// needed helper: the sibling repo and package a shimmed tool is built from
+struct ShimmedTool {
+    tool: &'static str,
+    repo: &'static str,
+    package: &'static str,
+}
+
+// needed helper: one shim per fleet tool in `<fleet>/bin`, built from the sibling checkout
+fn write_shims(fleet: &Fleet) -> Result<(), Error> {
+    let shimmed_tools = [
+        ShimmedTool {
+            tool: "lele-lint",
+            repo: "lele-rust-linter",
+            package: "lele-lint",
+        },
+        ShimmedTool {
+            tool: "lele-bevy-lint",
+            repo: "lele-rust-linter",
+            package: "lele-bevy-lint",
+        },
+        ShimmedTool {
+            tool: "lele-function-taxonomy",
+            repo: "lele-rust-function-taxonomy",
+            package: "lele-rust-function-taxonomy",
+        },
+    ];
+    let bin = fleet.root.join("bin");
+    std::fs::create_dir_all(&bin).map_err(|error| Error::Io {
+        message: format!("{}: {error}", bin.display()),
+    })?;
+    let template = include_str!("../../shim.sh.template");
+    for shimmed in &shimmed_tools {
+        let repo = fleet.root.join(shimmed.repo);
+        let quoted_repo = repo.display().to_string().replace('\'', r"'\''");
+        let script = template
+            .replace("@TOOL@", shimmed.tool)
+            .replace("@PACKAGE@", shimmed.package)
+            .replace("@REPO@", &quoted_repo);
+        let shim = bin.join(shimmed.tool);
+        std::fs::write(&shim, script)
+            .and_then(|()| std::fs::set_permissions(&shim, std::fs::Permissions::from_mode(0o755)))
+            .map_err(|error| Error::Io {
+                message: format!("{}: {error}", shim.display()),
+            })?;
+        println!(
+            "shim:              {} -> {}",
+            shim.display(),
+            repo.display()
+        );
+    }
+    println!(
+        "put the shims before ~/.cargo/bin in your shell profile, then check `lele-release status`:"
+    );
+    println!("  export PATH=\"{}:$PATH\"", bin.display());
     Ok(())
 }
 

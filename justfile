@@ -32,9 +32,11 @@ setup: install
 hooks:
     prek install -t pre-commit -t pre-push
 
-# Fail fast when the installed binary is not the version this repo expects.
+# Show which binary each tool resolves to and its version. A `<fleet>/bin` shim
+# (written by `lele-release setup`) builds the sibling checkout; set
+# LELE_USE_INSTALLED=1 to use the installed binary instead.
 tools:
-    test "$(lele-release --version)" = "lele-release 0.0.1"
+    @for tool in lele-release; do printf '%-24s %s  %s\n' "$tool" "$(command -v "$tool")" "$("$tool" --version)"; done
 
 # Run the tool without installing it.
 run *args:

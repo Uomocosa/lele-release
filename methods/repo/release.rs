@@ -108,14 +108,13 @@ fn verify_staged_lock(repo: &Repo, next: &Version) -> Result<(), Error> {
             .and_then(|rest| rest.strip_suffix('"'))
         {
             own = repo.packages.iter().any(|package| package.name == name);
-        } else if own {
-            if let Some(version) = line
+        } else if own
+            && let Some(version) = line
                 .strip_prefix("version = \"")
                 .and_then(|rest| rest.strip_suffix('"'))
-            {
-                found = Some(version.to_string());
-                break;
-            }
+        {
+            found = Some(version.to_string());
+            break;
         }
     }
     match found {

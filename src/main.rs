@@ -138,9 +138,12 @@ fn pins(mode: __basic__::enums::PinsMode, path: Option<&Path>, root: &Path) -> R
         print!("{input}");
         return Ok(());
     };
-    let output = match mode {
-        __basic__::enums::PinsMode::Clean => fleet.clean_manifest(&manifest, &input),
-        __basic__::enums::PinsMode::Smudge => fleet.smudge_manifest(&manifest, &input),
+    let is_lock = path.file_name().and_then(|name| name.to_str()) == Some("Cargo.lock");
+    let output = match (mode, is_lock) {
+        (__basic__::enums::PinsMode::Clean, true) => fleet.clean_lock(&manifest, &input),
+        (__basic__::enums::PinsMode::Smudge, true) => fleet.smudge_lock(&manifest, &input),
+        (__basic__::enums::PinsMode::Clean, false) => fleet.clean_manifest(&manifest, &input),
+        (__basic__::enums::PinsMode::Smudge, false) => fleet.smudge_manifest(&manifest, &input),
     };
     match output {
         Ok(text) => print!("{text}"),

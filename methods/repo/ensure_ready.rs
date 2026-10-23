@@ -1,22 +1,12 @@
 use crate::Error;
+use crate::fleet::Fleet;
 use crate::git::Git;
 use crate::repo::Repo;
 
-pub fn ensure_ready(repo: &Repo) -> Result<(), Error> {
+pub fn ensure_ready(repo: &Repo, fleet: &Fleet) -> Result<(), Error> {
     let _ = Git::output(&repo.dir, &["fetch", "--quiet", "origin"]);
     gate(repo)?;
-    let status = Git::output(&repo.dir, &["status", "--porcelain"])?;
-    let lock_only = !status.is_empty() && status.lines().all(|line| line.ends_with("Cargo.lock"));
-    if lock_only {
-        let _ = Git::run(&repo.dir, &["checkout", "--", "Cargo.lock"]);
-    }
-    let status = Git::output(&repo.dir, &["status", "--porcelain"])?;
-    if !status.is_empty() {
-        return Err(Error::Refused(format!(
-            "{}: working tree is not clean:\n{status}",
-            repo.name
-        )));
-    }
+    settle(repo, fleet)?;
     let branch = Git::output(&repo.dir, &["rev-parse", "--abbrev-ref", "HEAD"])?;
     if branch != "main" {
         return Err(Error::Refused(format!(
@@ -69,6 +59,64 @@ fn gate(repo: &Repo) -> Result<(), Error> {
         }
     }
     Ok(())
+}
+
+// needed helper: restore generated files; accept pin drift produced by an earlier partial run
+fn settle(repo: &Repo, fleet: &Fleet) -> Result<(), Error> {
+    let status = Git::output(&repo.dir, &["status", "--porcelain", "-z"])?;
+    for entry in status.split('\0').filter(|entry| !entry.is_empty()) {
+        let path = entry.get(3..).unwrap_or_default();
+        if path.ends_with("Cargo.lock") {
+            let _ = Git::run(&repo.dir, &["checkout", "--", path]);
+            continue;
+        }
+        if path.ends_with("Cargo.toml") && manifest_drift_only(repo, fleet, path)? {
+            let _ = Git::run(&repo.dir, &["checkout", "--", path]);
+            continue;
+        }
+        return Err(Error::Refused(format!(
+            "{}: working tree is not clean: {path}",
+            repo.name
+        )));
+    }
+    let status = Git::output(&repo.dir, &["status", "--porcelain"])?;
+    if status.is_empty() {
+        Ok(())
+    } else {
+        Err(Error::Refused(format!(
+            "{}: working tree is not clean:\n{status}",
+            repo.name
+        )))
+    }
+}
+
+// needed helper: true when the only difference in a manifest is fleet dependency entries
+fn manifest_drift_only(repo: &Repo, fleet: &Fleet, relative: &str) -> Result<bool, Error> {
+    let path = repo.dir.join(relative);
+    let Ok(text) = std::fs::read_to_string(&path) else {
+        return Ok(false);
+    };
+    let cleaned = fleet.clean_manifest(&path, &text)?;
+    let index = Git::output(&repo.dir, &["show", &format!(":{relative}")])?;
+    Ok(without_fleet_lines(&cleaned, fleet) == without_fleet_lines(&index, fleet))
+}
+
+// needed helper: drop inline dependency entries that name a fleet package
+fn without_fleet_lines(text: &str, fleet: &Fleet) -> String {
+    let names: Vec<String> = fleet
+        .repos
+        .iter()
+        .flat_map(|repo| repo.packages.iter().map(|package| package.name.clone()))
+        .collect();
+    text.lines()
+        .filter(|line| {
+            let trimmed = line.trim_start();
+            !names
+                .iter()
+                .any(|name| trimmed.starts_with(&format!("{name} = ")))
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 #[cfg(test)]

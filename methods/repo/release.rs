@@ -2,14 +2,12 @@ use semver::Version;
 use toml_edit::DocumentMut;
 
 use crate::Error;
-use crate::fleet::Fleet;
 use crate::git::Git;
 use crate::repo::Repo;
 
-pub fn release(repo: &Repo, next: &Version, fleet: &Fleet) -> Result<(), Error> {
+pub fn release(repo: &Repo, next: &Version) -> Result<(), Error> {
     let tag = format!("v{next}");
     write_version(repo, next)?;
-    normalise_lock(repo, fleet, next)?;
     stage(repo)?;
     match publish(repo, next, &tag) {
         Ok(()) => Ok(()),
@@ -87,77 +85,6 @@ fn write_version(repo: &Repo, next: &Version) -> Result<(), Error> {
     std::fs::write(&repo.version_manifest, document.to_string()).map_err(|error| Error::Io {
         message: format!("{}: {error}", repo.version_manifest.display()),
     })
-}
-
-// needed helper: rewrite fleet entries in Cargo.lock to the released git source
-fn normalise_lock(repo: &Repo, fleet: &Fleet, next: &Version) -> Result<(), Error> {
-    let lock = repo.dir.join("Cargo.lock");
-    if !lock.exists() {
-        return Ok(());
-    }
-    let text = std::fs::read_to_string(&lock).map_err(|error| Error::Io {
-        message: format!("{}: {error}", lock.display()),
-    })?;
-    let mut document: DocumentMut = text.parse::<DocumentMut>().map_err(|error| Error::Toml {
-        path: lock.display().to_string(),
-        message: error.to_string(),
-    })?;
-    let Some(packages) = document
-        .get_mut("package")
-        .and_then(toml_edit::Item::as_array_of_tables_mut)
-    else {
-        return Ok(());
-    };
-    let mut changed = false;
-    for table in packages.iter_mut() {
-        let Some(name) = table
-            .get("name")
-            .and_then(toml_edit::Item::as_str)
-            .map(str::to_string)
-        else {
-            continue;
-        };
-        if repo.packages.iter().any(|package| package.name == name) {
-            table.insert("version", toml_edit::value(next.to_string()));
-            changed = true;
-            continue;
-        }
-        let Some(dependency) = fleet.repos.iter().find(|candidate| {
-            candidate
-                .packages
-                .iter()
-                .any(|package| package.name == name)
-        }) else {
-            continue;
-        };
-        let is_edge = fleet
-            .dependencies
-            .iter()
-            .any(|edge| edge.dependent == repo.name && edge.dependency == dependency.name);
-        if !is_edge {
-            continue;
-        }
-        let source = git_source(dependency)?;
-        table.insert("source", toml_edit::value(source));
-        table.insert("version", toml_edit::value(dependency.version.to_string()));
-        changed = true;
-    }
-    if changed {
-        std::fs::write(&lock, document.to_string()).map_err(|error| Error::Io {
-            message: format!("{}: {error}", lock.display()),
-        })?;
-    }
-    Ok(())
-}
-
-// needed helper: the lock `source` value for a freshly released dependency
-fn git_source(dependency: &Repo) -> Result<String, Error> {
-    let url = dependency.url.trim_end_matches(".git").to_string();
-    let head = Git::output(&dependency.dir, &["rev-parse", "HEAD"])?;
-    match (dependency.latest_tag()?, dependency.commits_since_tag()?) {
-        (Some(tag), Some(0)) => Ok(format!("git+{url}?tag={tag}#{head}")),
-        _ => Ok(format!("git+{url}?rev={head}#{head}")),
-    }
 }
 
 // needed helper: stage only the version file and the lock

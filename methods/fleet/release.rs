@@ -16,7 +16,7 @@ pub fn release(
     }
     for step in &steps {
         let repo = repo_of(fleet, &step.repo)?;
-        repo.ensure_ready()?;
+        repo.ensure_ready(fleet)?;
         println!("preflight ✓ {:<28} clean · main · in sync", repo.name);
     }
     println!();
@@ -36,7 +36,7 @@ pub fn release(
     for step in &steps {
         let fresh = Fleet::try_from(fleet.root.as_path())?;
         let repo = repo_of(&fresh, &step.repo)?;
-        Repo::release(repo, &step.next, &fresh)?;
+        Repo::release(repo, &step.next)?;
         println!(
             "[{}] {:<28} {} · tag v{} · pushed",
             step.repo, step.current, step.next, step.next

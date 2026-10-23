@@ -30,8 +30,8 @@ impl Repo {
     pub fn commits_since_tag(&self) -> Result<Option<u64>, Error> {}
     #[must_use]
     pub fn matches_url(&self, url: &str) -> bool {}
-    pub fn ensure_ready(&self) -> Result<(), Error> {}
-    pub fn release(&self, next: &Version, fleet: &Fleet) -> Result<(), Error> {}
+    pub fn ensure_ready(&self, fleet: &Fleet) -> Result<(), Error> {}
+    pub fn release(&self, next: &Version) -> Result<(), Error> {}
 }
 
 #[cfg(test)]

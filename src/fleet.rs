@@ -32,6 +32,8 @@ impl Fleet {
     pub fn pins(&self, repo: &Repo) -> Result<Vec<__basic__::structs::Pin>, Error> {}
     pub fn clean_manifest(&self, manifest: &Path, input: &str) -> Result<String, Error> {}
     pub fn smudge_manifest(&self, manifest: &Path, input: &str) -> Result<String, Error> {}
+    pub fn clean_lock(&self, lock: &Path, input: &str) -> Result<String, Error> {}
+    pub fn smudge_lock(&self, lock: &Path, input: &str) -> Result<String, Error> {}
 }
 
 #[atomic_delegates]
@@ -55,5 +57,7 @@ mod tests {
         let _ = Fleet::pins;
         let _ = Fleet::clean_manifest;
         let _ = Fleet::smudge_manifest;
+        let _ = Fleet::clean_lock;
+        let _ = Fleet::smudge_lock;
     }
 }

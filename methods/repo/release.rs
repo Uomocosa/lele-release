@@ -12,6 +12,7 @@ pub fn release(repo: &Repo, next: &Version) -> Result<(), Error> {
     write_version(repo, next)?;
     bump_lock_version(repo, next)?;
     stage(repo)?;
+    verify_staged_lock(repo, next)?;
     match publish(repo, next, &tag) {
         Ok(()) => Ok(()),
         Err(error) => {
@@ -88,6 +89,43 @@ fn write_version(repo: &Repo, next: &Version) -> Result<(), Error> {
     std::fs::write(&repo.version_manifest, document.to_string()).map_err(|error| Error::Io {
         message: format!("{}: {error}", repo.version_manifest.display()),
     })
+}
+
+// needed helper: refuse to create a release whose staged lock disagrees with the version
+fn verify_staged_lock(repo: &Repo, next: &Version) -> Result<(), Error> {
+    if !repo.dir.join("Cargo.lock").exists() {
+        return Ok(());
+    }
+    let staged = Git::output(&repo.dir, &["show", ":Cargo.lock"])?;
+    let mut own = false;
+    let mut found: Option<String> = None;
+    for line in staged.lines() {
+        if line == "[[package]]" {
+            own = false;
+        }
+        if let Some(name) = line
+            .strip_prefix("name = \"")
+            .and_then(|rest| rest.strip_suffix('"'))
+        {
+            own = repo.packages.iter().any(|package| package.name == name);
+        } else if own {
+            if let Some(version) = line
+                .strip_prefix("version = \"")
+                .and_then(|rest| rest.strip_suffix('"'))
+            {
+                found = Some(version.to_string());
+                break;
+            }
+        }
+    }
+    match found {
+        Some(version) if version == next.to_string() => Ok(()),
+        Some(version) => Err(Error::Refused(format!(
+            "{}: staged lock says {version}, release is {next}",
+            repo.name
+        ))),
+        None => Ok(()),
+    }
 }
 
 // needed helper: the lock's own package version must move too, or cargo rewrites it later

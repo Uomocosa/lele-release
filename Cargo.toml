@@ -1,0 +1,41 @@
+[package]
+name = "lele-release"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.98"
+description = "Release orchestrator for the lele multi-repo fleet: tag pins in commits, sibling paths in the working tree"
+license = "MIT"
+
+[[bin]]
+name = "lele-release"
+path = "src/main.rs"
+
+[dependencies]
+atomic-delegate-macros = { git = "https://github.com/Uomocosa/lele-rust-linter", tag = "v0.0.3" }
+clap = { version = "=4.6.6", features = ["derive"] }
+pathdiff = "=0.2.3"
+semver = "=1.0.27"
+thiserror = "=2.0.19"
+toml_edit = "=0.22.27"
+
+[dev-dependencies]
+tempfile = "=3.27.0"
+
+[lints.clippy]
+pedantic = { level = "deny", priority = -1 }
+nursery = { level = "deny", priority = -1 }
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+exit = "deny"
+as_conversions = "deny"
+arithmetic_side_effects = "deny"
+indexing_slicing = "deny"
+unchecked_time_subtraction = "deny"
+panic_in_result_fn = "deny"
+string_slice = "deny"
+unimplemented = "deny"
+todo = "deny"
+unreachable = "deny"
+module_inception = "allow"
+missing_errors_doc = "allow"

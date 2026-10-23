@@ -1,0 +1,4 @@
+[filter "lele-pins"]
+    clean = "@BINARY@" pins clean %f
+    smudge = "@BINARY@" pins smudge %f
+    required = false

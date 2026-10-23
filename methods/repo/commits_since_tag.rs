@@ -8,12 +8,12 @@ pub fn commits_since_tag(repo: &Repo) -> Result<Option<u64>, Error> {
     };
     let range = format!("{tag}..HEAD");
     let counted = Git::output(&repo.dir, &["rev-list", "--count", &range])?;
-    let count = counted.parse::<u64>().map_err(|error| {
-        Error::Refused(format!(
-            "{}: cannot read commit count `{counted}`: {error}",
-            repo.name
-        ))
-    })?;
+    let count = counted
+        .parse::<u64>()
+        .map_err(|source| Error::CommitCount {
+            context: format!("{}: cannot read commit count `{counted}`", repo.name),
+            source,
+        })?;
     Ok(Some(count))
 }
 

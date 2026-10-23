@@ -6,7 +6,8 @@ use crate::fleet::Fleet;
 
 pub fn setup(fleet: &Fleet) -> Result<(), Error> {
     let executable = std::env::current_exe().map_err(|error| Error::Io {
-        message: format!("cannot locate this binary: {error}"),
+        context: String::from("cannot locate this binary"),
+        source: error,
     })?;
     let Some(home) = std::env::var_os("HOME").map(PathBuf::from) else {
         return Err(Error::Refused(String::from("HOME is not set")));
@@ -14,14 +15,16 @@ pub fn setup(fleet: &Fleet) -> Result<(), Error> {
     let config = home.join(".config/git/lele-pins.gitconfig");
     if let Some(parent) = config.parent() {
         std::fs::create_dir_all(parent).map_err(|error| Error::Io {
-            message: format!("{}: {error}", parent.display()),
+            context: format!("{}", parent.display()),
+            source: error,
         })?;
     }
     let binary = executable.display();
     let template = include_str!("../../pins.gitconfig.template");
     let definition = template.replace("@BINARY@", &binary.to_string());
     std::fs::write(&config, definition).map_err(|error| Error::Io {
-        message: format!("{}: {error}", config.display()),
+        context: format!("{}", config.display()),
+        source: error,
     })?;
     include_pointer(&home)?;
     write_shims(fleet)?;
@@ -75,7 +78,8 @@ fn write_shims(fleet: &Fleet) -> Result<(), Error> {
     ];
     let bin = fleet.root.join("bin");
     std::fs::create_dir_all(&bin).map_err(|error| Error::Io {
-        message: format!("{}: {error}", bin.display()),
+        context: format!("{}", bin.display()),
+        source: error,
     })?;
     let template = include_str!("../../shim.sh.template");
     for shimmed in &shimmed_tools {
@@ -89,7 +93,8 @@ fn write_shims(fleet: &Fleet) -> Result<(), Error> {
         std::fs::write(&shim, script)
             .and_then(|()| std::fs::set_permissions(&shim, std::fs::Permissions::from_mode(0o755)))
             .map_err(|error| Error::Io {
-                message: format!("{}: {error}", shim.display()),
+                context: format!("{}", shim.display()),
+                source: error,
             })?;
         println!(
             "shim:              {} -> {}",
@@ -114,7 +119,8 @@ fn include_pointer(home: &std::path::Path) -> Result<(), Error> {
     }
     let block = "\n[includeIf \"hasconfig:remote.*.url:https://github.com/Uomocosa/**\"]\n    path = ~/.config/git/lele-pins.gitconfig\n";
     std::fs::write(&gitconfig, format!("{existing}{block}")).map_err(|error| Error::Io {
-        message: format!("{}: {error}", gitconfig.display()),
+        context: format!("{}", gitconfig.display()),
+        source: error,
     })?;
     println!("added includeIf to {}", gitconfig.display());
     Ok(())

@@ -9,8 +9,8 @@ use crate::repo::Repo;
 
 pub fn pins(fleet: &Fleet, repo: &Repo) -> Result<Vec<basic::structs::Pin>, Error> {
     let mut found = Vec::new();
-    for manifest in repo.manifests()? {
-        let document = read(&manifest)?;
+    for manifest in &repo.manifests {
+        let document = read(manifest)?;
         for (key, item) in dependency_items(&document) {
             let Some(table) = item.as_table_like() else {
                 continue;
@@ -23,7 +23,7 @@ pub fn pins(fleet: &Fleet, repo: &Repo) -> Result<Vec<basic::structs::Pin>, Erro
             let Some(form) = form_of(table) else {
                 continue;
             };
-            if points_at_fleet(fleet, repo, &manifest, table, &form) {
+            if points_at_fleet(fleet, repo, manifest, table, &form) {
                 found.push(basic::structs::Pin {
                     manifest: manifest.clone(),
                     dependent: repo.name.clone(),
@@ -39,11 +39,12 @@ pub fn pins(fleet: &Fleet, repo: &Repo) -> Result<Vec<basic::structs::Pin>, Erro
 // needed helper: read one manifest
 fn read(manifest: &Path) -> Result<DocumentMut, Error> {
     let text = std::fs::read_to_string(manifest).map_err(|error| Error::Io {
-        message: format!("{}: {error}", manifest.display()),
+        context: format!("{}", manifest.display()),
+        source: error,
     })?;
     text.parse::<DocumentMut>().map_err(|error| Error::Toml {
-        path: manifest.display().to_string(),
-        message: error.to_string(),
+        path: manifest.to_path_buf(),
+        source: error,
     })
 }
 

@@ -53,7 +53,7 @@ fn main() -> ExitCode {
     match run(Args::parse()) {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
-            eprintln!("lele-release: {error}");
+            eprintln!("lele-release: {}", with_causes(&error));
             ExitCode::FAILURE
         }
     }
@@ -123,7 +123,8 @@ fn pins(mode: basic::enums::PinsMode, path: Option<&Path>, root: &Path) -> Resul
     std::io::stdin()
         .read_to_string(&mut input)
         .map_err(|error| Error::Io {
-            message: format!("stdin: {error}"),
+            context: String::from("stdin"),
+            source: error,
         })?;
     let Some(path) = path else {
         print!("{input}");
@@ -150,4 +151,16 @@ fn pins(mode: basic::enums::PinsMode, path: Option<&Path>, root: &Path) -> Resul
         Err(_) => print!("{input}"),
     }
     Ok(())
+}
+
+// needed helper: the error and every `source()` cause, joined with ": "
+fn with_causes(error: &dyn std::error::Error) -> String {
+    let mut message = error.to_string();
+    let mut cause = error.source();
+    while let Some(inner) = cause {
+        message.push_str(": ");
+        message.push_str(&inner.to_string());
+        cause = inner.source();
+    }
+    message
 }

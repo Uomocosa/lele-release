@@ -8,7 +8,8 @@ pub fn run(dir: &Path, args: &[&str]) -> Result<(), Error> {
         .current_dir(dir)
         .output()
         .map_err(|error| Error::Io {
-            message: format!("cannot run git in {}: {error}", dir.display()),
+            context: format!("cannot run git in {}", dir.display()),
+            source: error,
         })?;
     if command.status.success() {
         return Ok(());

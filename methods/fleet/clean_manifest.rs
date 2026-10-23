@@ -9,8 +9,8 @@ use crate::repo::Repo;
 
 pub fn clean_manifest(fleet: &Fleet, manifest: &Path, input: &str) -> Result<String, Error> {
     let mut document: DocumentMut = input.parse::<DocumentMut>().map_err(|error| Error::Toml {
-        path: manifest.display().to_string(),
-        message: error.to_string(),
+        path: manifest.to_path_buf(),
+        source: error,
     })?;
     let base = manifest
         .parent()

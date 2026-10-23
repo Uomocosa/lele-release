@@ -11,9 +11,9 @@ use crate::repo::Repo;
 
 pub fn try_from_path(root: &Path) -> Result<Fleet, Error> {
     let mut repos = Vec::new();
-    let entries = std::fs::read_dir(root).map_err(|error| io(root, &error))?;
+    let entries = std::fs::read_dir(root).map_err(|error| io(root, error))?;
     for entry in entries {
-        let dir = entry.map_err(|error| io(root, &error))?.path();
+        let dir = entry.map_err(|error| io(root, error))?.path();
         if !dir.join(".git").exists() {
             continue;
         }
@@ -132,10 +132,10 @@ fn expand_member(base: &Path, pattern: &str) -> Vec<PathBuf> {
 
 // needed helper: parse one manifest with the path attached to any error
 fn read_manifest(manifest: &Path) -> Result<DocumentMut, Error> {
-    let text = std::fs::read_to_string(manifest).map_err(|error| io(manifest, &error))?;
+    let text = std::fs::read_to_string(manifest).map_err(|error| io(manifest, error))?;
     text.parse::<DocumentMut>().map_err(|error| Error::Toml {
-        path: manifest.display().to_string(),
-        message: error.to_string(),
+        path: manifest.to_path_buf(),
+        source: error,
     })
 }
 
@@ -173,11 +173,12 @@ fn package_version(
                     package.name
                 ))
             })?;
-        let parsed = version.parse::<Version>().map_err(|error| {
-            Error::Refused(format!(
-                "{repo}: package `{}` version `{version}` is not semver: {error}",
+        let parsed = version.parse::<Version>().map_err(|source| Error::Semver {
+            context: format!(
+                "{repo}: package `{}` version `{version}` is not semver",
                 package.name
-            ))
+            ),
+            source,
         })?;
         match &found {
             None => found = Some(parsed),
@@ -297,9 +298,10 @@ fn normalise(path: &Path) -> PathBuf {
 }
 
 // needed helper: attach the path to an i/o error
-fn io(path: &Path, error: &std::io::Error) -> Error {
+fn io(path: &Path, source: std::io::Error) -> Error {
     Error::Io {
-        message: format!("{}: {error}", path.display()),
+        context: path.display().to_string(),
+        source,
     }
 }
 

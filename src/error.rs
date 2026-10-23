@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -9,11 +11,33 @@ pub enum Error {
         stderr: String,
     },
 
-    #[error("i/o error: {message}")]
-    Io { message: String },
+    #[error("{context}")]
+    Io {
+        context: String,
+        #[source]
+        source: std::io::Error,
+    },
 
-    #[error("cannot parse {path}: {message}")]
-    Toml { path: String, message: String },
+    #[error("cannot parse {}", path.display())]
+    Toml {
+        path: PathBuf,
+        #[source]
+        source: toml_edit::TomlError,
+    },
+
+    #[error("{context}")]
+    CommitCount {
+        context: String,
+        #[source]
+        source: std::num::ParseIntError,
+    },
+
+    #[error("{context}")]
+    Semver {
+        context: String,
+        #[source]
+        source: semver::Error,
+    },
 
     #[error("{0}")]
     Refused(String),

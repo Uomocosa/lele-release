@@ -17,11 +17,6 @@ pub struct Repo {
     pub version: Version,
 }
 
-#[rustfmt::skip]
-impl Repo {
-    pub fn manifests(&self) -> Result<Vec<PathBuf>, Error> { Ok(self.manifests.clone()) }
-}
-
 #[atomic_delegates]
 impl Repo {
     #[must_use]
@@ -45,6 +40,5 @@ mod tests {
         let _ = Repo::matches_url;
         let _ = Repo::ensure_ready;
         let _ = Repo::release;
-        let _ = Repo::manifests;
     }
 }

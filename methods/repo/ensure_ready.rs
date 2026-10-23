@@ -48,7 +48,8 @@ fn gate(repo: &Repo) -> Result<(), Error> {
             .current_dir(&repo.dir)
             .output()
             .map_err(|error| Error::Io {
-                message: format!("{}: cannot run `just {recipe}`: {error}", repo.name),
+                context: format!("{}: cannot run `just {recipe}`", repo.name),
+                source: error,
             })?;
         if !output.status.success() {
             return Err(Error::Refused(format!(
@@ -86,7 +87,8 @@ fn status_paths(repo: &Repo) -> Result<Vec<String>, Error> {
         .current_dir(&repo.dir)
         .output()
         .map_err(|error| Error::Io {
-            message: format!("{}: cannot read git status: {error}", repo.name),
+            context: format!("{}: cannot read git status", repo.name),
+            source: error,
         })?;
     let text = String::from_utf8_lossy(&output.stdout);
     Ok(text

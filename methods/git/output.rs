@@ -6,7 +6,8 @@ use crate::Error;
 pub fn output(dir: &Path, args: &[&str]) -> Result<String, Error> {
     let command = Command::new("git").args(args).current_dir(dir).output();
     let output = command.map_err(|error| Error::Io {
-        message: format!("cannot run git in {}: {error}", dir.display()),
+        context: format!("cannot run git in {}", dir.display()),
+        source: error,
     })?;
     if !output.status.success() {
         return Err(Error::Git {

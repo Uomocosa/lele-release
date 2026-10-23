@@ -52,11 +52,12 @@ fn rollback(repo: &Repo, tag: &str) {
 // needed helper: write the next version into the manifest that owns it
 fn write_version(repo: &Repo, next: &Version) -> Result<(), Error> {
     let text = std::fs::read_to_string(&repo.version_manifest).map_err(|error| Error::Io {
-        message: format!("{}: {error}", repo.version_manifest.display()),
+        context: format!("{}", repo.version_manifest.display()),
+        source: error,
     })?;
     let mut document: DocumentMut = text.parse::<DocumentMut>().map_err(|error| Error::Toml {
-        path: repo.version_manifest.display().to_string(),
-        message: error.to_string(),
+        path: repo.version_manifest.clone(),
+        source: error,
     })?;
     let inherited = document
         .get("workspace")
@@ -87,7 +88,8 @@ fn write_version(repo: &Repo, next: &Version) -> Result<(), Error> {
     };
     *field = toml_edit::value(next.to_string());
     std::fs::write(&repo.version_manifest, document.to_string()).map_err(|error| Error::Io {
-        message: format!("{}: {error}", repo.version_manifest.display()),
+        context: format!("{}", repo.version_manifest.display()),
+        source: error,
     })
 }
 
@@ -134,7 +136,8 @@ fn bump_lock_version(repo: &Repo, next: &Version) -> Result<(), Error> {
         return Ok(());
     }
     let text = std::fs::read_to_string(&lock).map_err(|error| Error::Io {
-        message: format!("{}: {error}", lock.display()),
+        context: format!("{}", lock.display()),
+        source: error,
     })?;
     let mut out = String::new();
     let mut own = false;
@@ -155,7 +158,8 @@ fn bump_lock_version(repo: &Repo, next: &Version) -> Result<(), Error> {
         out.push('\n');
     }
     std::fs::write(&lock, out).map_err(|error| Error::Io {
-        message: format!("{}: {error}", lock.display()),
+        context: format!("{}", lock.display()),
+        source: error,
     })
 }
 

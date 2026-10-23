@@ -125,6 +125,11 @@ affected   = changed ∪ every transitive dependent of a changed repo
   the next full run picks it up.
 - Order is dependency-first (Kahn). A cycle is a refusal, never a guess.
 
+Preflight runs each selected repo's `just fmt`, `just lint` and `just test`, and
+restores a `Cargo.lock` that a local build rewrote. The release commit and the
+push then skip hooks (`--no-verify`): the gate already ran, and the hooks' cargo
+invocations would rewrite the path-form lock mid-flight.
+
 Per repo, in order:
 
 ```text
@@ -133,10 +138,7 @@ Per repo, in order:
 3. normalise Cargo.lock: every fleet dependency entry gets the git source of
    its dependency's new tag (offline; the SHA comes from the tag itself)
 4. git add (every manifest + Cargo.lock) · commit "chore(release): X.Y.Z"
-   — the clean filter writes the pins here. The commit is metadata-only and is
-   created with `--no-verify`: the commit hooks run cargo, which rewrites a
-   path-form lock mid-hook. Preflight runs `just fmt` and `just lint` instead,
-   and the push runs the repo's pre-push hooks (tests) as usual.
+   — the clean filter writes the pins here
 5. git tag -a vX.Y.Z
 6. git push --atomic origin main vX.Y.Z          (pre-push hooks run here)
 7. on rejection: reset --hard origin/main and delete the local tag

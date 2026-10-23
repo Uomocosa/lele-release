@@ -50,9 +50,9 @@ pub fn ensure_ready(repo: &Repo) -> Result<(), Error> {
     })
 }
 
-// needed helper: the gate that does not run cargo (a release commit is metadata only)
+// needed helper: the real gate runs before the release, so the metadata commit can skip hooks
 fn gate(repo: &Repo) -> Result<(), Error> {
-    for recipe in ["fmt", "lint"] {
+    for recipe in ["fmt", "lint", "test"] {
         let output = std::process::Command::new("just")
             .arg(recipe)
             .current_dir(&repo.dir)

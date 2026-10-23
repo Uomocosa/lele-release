@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use semver::Version;
 
-use crate::__basic__;
+use crate::basic;
 
 #[derive(Clone, Debug)]
 pub struct Package {
@@ -21,7 +21,7 @@ pub struct Pin {
     pub manifest: PathBuf,
     pub dependent: String,
     pub dependency: String,
-    pub form: __basic__::enums::PinForm,
+    pub form: basic::enums::PinForm,
 }
 
 #[derive(Clone, Debug)]

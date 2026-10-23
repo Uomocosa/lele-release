@@ -1,12 +1,12 @@
-use crate::__basic__;
 use crate::Error;
+use crate::basic;
 use crate::fleet::Fleet;
 use crate::repo::Repo;
 
 pub fn release(
     fleet: &Fleet,
-    level: __basic__::enums::Bump,
-    selection: &__basic__::enums::Selection,
+    level: basic::enums::Bump,
+    selection: &basic::enums::Selection,
     dry_run: bool,
 ) -> Result<(), Error> {
     let steps = select(fleet, fleet.plan(level)?, selection)?;
@@ -59,12 +59,12 @@ pub fn release(
 // needed helper: apply --only / --exclude to the planned steps
 fn select(
     fleet: &Fleet,
-    steps: Vec<__basic__::structs::ReleaseStep>,
-    selection: &__basic__::enums::Selection,
-) -> Result<Vec<__basic__::structs::ReleaseStep>, Error> {
+    steps: Vec<basic::structs::ReleaseStep>,
+    selection: &basic::enums::Selection,
+) -> Result<Vec<basic::structs::ReleaseStep>, Error> {
     match selection {
-        __basic__::enums::Selection::All => Ok(steps),
-        __basic__::enums::Selection::Only(names) => {
+        basic::enums::Selection::All => Ok(steps),
+        basic::enums::Selection::Only(names) => {
             for name in names {
                 if !fleet.repos.iter().any(|repo| &repo.name == name) {
                     return Err(Error::Refused(format!("unknown repo `{name}`")));
@@ -75,7 +75,7 @@ fn select(
                 .filter(|step| names.contains(&step.repo))
                 .collect())
         }
-        __basic__::enums::Selection::Exclude(names) => Ok(steps
+        basic::enums::Selection::Exclude(names) => Ok(steps
             .into_iter()
             .filter(|step| !names.contains(&step.repo))
             .collect()),

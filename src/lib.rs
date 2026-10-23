@@ -1,5 +1,5 @@
 #[path = "__basic__/mod.rs"]
-pub mod __basic__;
+pub mod basic;
 
 pub mod error;
 pub use error::Error;

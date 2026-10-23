@@ -3,15 +3,15 @@ use std::path::PathBuf;
 use atomic_delegate_macros::atomic_delegates;
 use semver::Version;
 
-use crate::__basic__;
 use crate::Error;
+use crate::basic;
 use crate::fleet::Fleet;
 
 pub struct Repo {
     pub name: String,
     pub dir: PathBuf,
     pub url: String,
-    pub packages: Vec<__basic__::structs::Package>,
+    pub packages: Vec<basic::structs::Package>,
     pub manifests: Vec<PathBuf>,
     pub version_manifest: PathBuf,
     pub version: Version,

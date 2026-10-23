@@ -1,13 +1,13 @@
 use semver::Version;
 
-use crate::__basic__;
 use crate::Error;
+use crate::basic;
 use crate::fleet::Fleet;
 
 pub fn plan(
     fleet: &Fleet,
-    level: __basic__::enums::Bump,
-) -> Result<Vec<__basic__::structs::ReleaseStep>, Error> {
+    level: basic::enums::Bump,
+) -> Result<Vec<basic::structs::ReleaseStep>, Error> {
     let changed = changed_repos(fleet)?;
     let affected = closure(fleet, &changed);
     let ordered = order(fleet, &affected)?;
@@ -33,7 +33,7 @@ pub fn plan(
         } else {
             bumped(&repo.version, level)
         };
-        steps.push(__basic__::structs::ReleaseStep {
+        steps.push(basic::structs::ReleaseStep {
             repo: name,
             current: repo.version.clone(),
             next,
@@ -100,17 +100,17 @@ fn order(fleet: &Fleet, affected: &[String]) -> Result<Vec<String>, Error> {
 }
 
 // needed helper: the next version for a bump level
-const fn bumped(version: &Version, level: __basic__::enums::Bump) -> Version {
+const fn bumped(version: &Version, level: basic::enums::Bump) -> Version {
     match level {
-        __basic__::enums::Bump::Patch => Version::new(
+        basic::enums::Bump::Patch => Version::new(
             version.major,
             version.minor,
             version.patch.saturating_add(1),
         ),
-        __basic__::enums::Bump::Minor => {
+        basic::enums::Bump::Minor => {
             Version::new(version.major, version.minor.saturating_add(1), 0)
         }
-        __basic__::enums::Bump::Major => Version::new(version.major.saturating_add(1), 0, 0),
+        basic::enums::Bump::Major => Version::new(version.major.saturating_add(1), 0, 0),
     }
 }
 
@@ -119,26 +119,26 @@ mod tests {
     use semver::Version;
 
     use super::bumped;
-    use crate::__basic__;
+    use crate::basic;
 
     #[test]
     fn test_usage() {
         let current = Version::parse("0.0.7").unwrap();
         assert_eq!(
-            bumped(&current, __basic__::enums::Bump::Patch),
+            bumped(&current, basic::enums::Bump::Patch),
             Version::parse("0.0.8").unwrap()
         );
         assert_eq!(
-            bumped(&current, __basic__::enums::Bump::Minor),
+            bumped(&current, basic::enums::Bump::Minor),
             Version::parse("0.1.0").unwrap()
         );
         assert_eq!(
-            bumped(&current, __basic__::enums::Bump::Major),
+            bumped(&current, basic::enums::Bump::Major),
             Version::parse("1.0.0").unwrap()
         );
         let stable = Version::parse("1.4.2").unwrap();
         assert_eq!(
-            bumped(&stable, __basic__::enums::Bump::Patch),
+            bumped(&stable, basic::enums::Bump::Patch),
             Version::parse("1.4.3").unwrap()
         );
     }

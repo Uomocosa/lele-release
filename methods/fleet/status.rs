@@ -1,5 +1,5 @@
-use crate::__basic__;
 use crate::Error;
+use crate::basic;
 use crate::fleet::Fleet;
 use crate::git::Git;
 use crate::repo::Repo;
@@ -95,21 +95,21 @@ fn print_pins(fleet: &Fleet) -> Result<(), Error> {
 }
 
 // needed helper: human label for a pin form
-fn form_label(form: &__basic__::enums::PinForm) -> String {
+fn form_label(form: &basic::enums::PinForm) -> String {
     match form {
-        __basic__::enums::PinForm::Tag(tag) => format!("tag {tag}"),
-        __basic__::enums::PinForm::Rev(rev) => {
+        basic::enums::PinForm::Tag(tag) => format!("tag {tag}"),
+        basic::enums::PinForm::Rev(rev) => {
             format!("rev {}", rev.chars().take(7).collect::<String>())
         }
-        __basic__::enums::PinForm::Branch(branch) => format!("branch {branch}"),
-        __basic__::enums::PinForm::Path(path) => format!("path {path}"),
-        __basic__::enums::PinForm::Git(url) => format!("git {url}"),
+        basic::enums::PinForm::Branch(branch) => format!("branch {branch}"),
+        basic::enums::PinForm::Path(path) => format!("path {path}"),
+        basic::enums::PinForm::Git(url) => format!("git {url}"),
     }
 }
 
 // needed helper: ok when the pin resolves to the dependency's latest tag
-fn pin_state(fleet: &Fleet, pin: &__basic__::structs::Pin) -> String {
-    if matches!(pin.form, __basic__::enums::PinForm::Path(_)) {
+fn pin_state(fleet: &Fleet, pin: &basic::structs::Pin) -> String {
+    if matches!(pin.form, basic::enums::PinForm::Path(_)) {
         return String::from("linked");
     }
     let Some(dependency) = fleet.repos.iter().find(|repo| {
@@ -123,9 +123,9 @@ fn pin_state(fleet: &Fleet, pin: &__basic__::structs::Pin) -> String {
         return String::from("no tag");
     };
     match &pin.form {
-        __basic__::enums::PinForm::Tag(pinned) if *pinned == tag => String::from("ok"),
-        __basic__::enums::PinForm::Tag(_) => format!("behind {tag}"),
-        __basic__::enums::PinForm::Rev(rev) => {
+        basic::enums::PinForm::Tag(pinned) if *pinned == tag => String::from("ok"),
+        basic::enums::PinForm::Tag(_) => format!("behind {tag}"),
+        basic::enums::PinForm::Rev(rev) => {
             let resolved = Git::output(&dependency.dir, &["rev-parse", &tag]).unwrap_or_default();
             if resolved.starts_with(rev.as_str()) {
                 String::from("ok")
@@ -171,7 +171,7 @@ fn print_filter(fleet: &Fleet) {
 
 // needed helper: what a release right now would do, without doing it
 fn print_plan(fleet: &Fleet) -> Result<(), Error> {
-    let steps = fleet.plan(__basic__::enums::Bump::Patch)?;
+    let steps = fleet.plan(basic::enums::Bump::Patch)?;
     if steps.is_empty() {
         println!("would release (patch): nothing");
         return Ok(());

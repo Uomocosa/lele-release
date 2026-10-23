@@ -2,14 +2,14 @@ use std::path::{Path, PathBuf};
 
 use atomic_delegate_macros::atomic_delegates;
 
-use crate::__basic__;
 use crate::Error;
+use crate::basic;
 use crate::repo::Repo;
 
 pub struct Fleet {
     pub root: PathBuf,
     pub repos: Vec<Repo>,
-    pub dependencies: Vec<__basic__::structs::Dependency>,
+    pub dependencies: Vec<basic::structs::Dependency>,
 }
 
 #[atomic_delegates]
@@ -18,18 +18,18 @@ impl Fleet {
     #[must_use]
     pub fn plan(
         &self,
-        level: __basic__::enums::Bump,
-    ) -> Result<Vec<__basic__::structs::ReleaseStep>, Error> {
+        level: basic::enums::Bump,
+    ) -> Result<Vec<basic::structs::ReleaseStep>, Error> {
     }
     pub fn release(
         &self,
-        level: __basic__::enums::Bump,
-        selection: &__basic__::enums::Selection,
+        level: basic::enums::Bump,
+        selection: &basic::enums::Selection,
         dry_run: bool,
     ) -> Result<(), Error> {
     }
     pub fn setup(&self) -> Result<(), Error> {}
-    pub fn pins(&self, repo: &Repo) -> Result<Vec<__basic__::structs::Pin>, Error> {}
+    pub fn pins(&self, repo: &Repo) -> Result<Vec<basic::structs::Pin>, Error> {}
     pub fn clean_manifest(&self, manifest: &Path, input: &str) -> Result<String, Error> {}
     pub fn smudge_manifest(&self, manifest: &Path, input: &str) -> Result<String, Error> {}
     pub fn clean_lock(&self, lock: &Path, input: &str) -> Result<String, Error> {}

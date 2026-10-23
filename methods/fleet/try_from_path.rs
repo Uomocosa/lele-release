@@ -3,8 +3,8 @@ use std::path::{Path, PathBuf};
 use semver::Version;
 use toml_edit::DocumentMut;
 
-use crate::__basic__;
 use crate::Error;
+use crate::basic;
 use crate::fleet::Fleet;
 use crate::git::Git;
 use crate::repo::Repo;
@@ -54,7 +54,7 @@ fn discover_repo(dir: &Path) -> Result<Option<Repo>, Error> {
             .and_then(|package| package.get("name"))
             .and_then(toml_edit::Item::as_str)
         {
-            packages.push(__basic__::structs::Package {
+            packages.push(basic::structs::Package {
                 name: package_name.to_string(),
                 manifest: manifest.clone(),
             });
@@ -153,7 +153,7 @@ fn workspace_version(document: &DocumentMut) -> Option<Version> {
 
 // needed helper: version of a single-package repo, or the one shared by all packages
 fn package_version(
-    packages: &[__basic__::structs::Package],
+    packages: &[basic::structs::Package],
     repo: &str,
 ) -> Result<(PathBuf, Version), Error> {
     let Some(first) = packages.first() else {
@@ -194,8 +194,8 @@ fn package_version(
 }
 
 // needed helper: repo-level dependency edges, from git pins and local path pins
-fn dependency_edges(repos: &[Repo]) -> Vec<__basic__::structs::Dependency> {
-    let mut edges: Vec<__basic__::structs::Dependency> = Vec::new();
+fn dependency_edges(repos: &[Repo]) -> Vec<basic::structs::Dependency> {
+    let mut edges: Vec<basic::structs::Dependency> = Vec::new();
     for repo in repos {
         for manifest in &repo.manifests {
             let Ok(document) = read_manifest(manifest) else {
@@ -206,7 +206,7 @@ fn dependency_edges(repos: &[Repo]) -> Vec<__basic__::structs::Dependency> {
                 if target.name == repo.name {
                     continue;
                 }
-                let edge = __basic__::structs::Dependency {
+                let edge = basic::structs::Dependency {
                     dependent: repo.name.clone(),
                     dependency: target.name.clone(),
                 };

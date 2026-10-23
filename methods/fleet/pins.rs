@@ -2,12 +2,12 @@ use std::path::{Path, PathBuf};
 
 use toml_edit::{DocumentMut, Item};
 
-use crate::__basic__;
 use crate::Error;
+use crate::basic;
 use crate::fleet::Fleet;
 use crate::repo::Repo;
 
-pub fn pins(fleet: &Fleet, repo: &Repo) -> Result<Vec<__basic__::structs::Pin>, Error> {
+pub fn pins(fleet: &Fleet, repo: &Repo) -> Result<Vec<basic::structs::Pin>, Error> {
     let mut found = Vec::new();
     for manifest in repo.manifests()? {
         let document = read(&manifest)?;
@@ -24,7 +24,7 @@ pub fn pins(fleet: &Fleet, repo: &Repo) -> Result<Vec<__basic__::structs::Pin>, 
                 continue;
             };
             if points_at_fleet(fleet, repo, &manifest, table, &form) {
-                found.push(__basic__::structs::Pin {
+                found.push(basic::structs::Pin {
                     manifest: manifest.clone(),
                     dependent: repo.name.clone(),
                     dependency,
@@ -71,21 +71,21 @@ fn dependency_items(document: &DocumentMut) -> Vec<(String, &Item)> {
 }
 
 // needed helper: which pin form an entry uses
-fn form_of(table: &dyn toml_edit::TableLike) -> Option<__basic__::enums::PinForm> {
+fn form_of(table: &dyn toml_edit::TableLike) -> Option<basic::enums::PinForm> {
     if let Some(path) = table.get("path").and_then(Item::as_str) {
-        return Some(__basic__::enums::PinForm::Path(path.to_string()));
+        return Some(basic::enums::PinForm::Path(path.to_string()));
     }
     let url = table.get("git").and_then(Item::as_str)?.to_string();
     if let Some(tag) = table.get("tag").and_then(Item::as_str) {
-        return Some(__basic__::enums::PinForm::Tag(tag.to_string()));
+        return Some(basic::enums::PinForm::Tag(tag.to_string()));
     }
     if let Some(rev) = table.get("rev").and_then(Item::as_str) {
-        return Some(__basic__::enums::PinForm::Rev(rev.to_string()));
+        return Some(basic::enums::PinForm::Rev(rev.to_string()));
     }
     if let Some(branch) = table.get("branch").and_then(Item::as_str) {
-        return Some(__basic__::enums::PinForm::Branch(branch.to_string()));
+        return Some(basic::enums::PinForm::Branch(branch.to_string()));
     }
-    Some(__basic__::enums::PinForm::Git(url))
+    Some(basic::enums::PinForm::Git(url))
 }
 
 // needed helper: does this entry point at one of the fleet's other repos?
@@ -94,10 +94,10 @@ fn points_at_fleet(
     repo: &Repo,
     manifest: &Path,
     table: &dyn toml_edit::TableLike,
-    form: &__basic__::enums::PinForm,
+    form: &basic::enums::PinForm,
 ) -> bool {
     match form {
-        __basic__::enums::PinForm::Path(path) => {
+        basic::enums::PinForm::Path(path) => {
             let base = manifest.parent().unwrap_or_else(|| Path::new("."));
             resolve(fleet, base, path).is_some_and(|target| target.name != repo.name)
         }

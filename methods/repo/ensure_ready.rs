@@ -63,9 +63,8 @@ fn gate(repo: &Repo) -> Result<(), Error> {
 
 // needed helper: restore generated files; accept pin drift produced by an earlier partial run
 fn settle(repo: &Repo, fleet: &Fleet) -> Result<(), Error> {
-    let status = Git::output(&repo.dir, &["status", "--porcelain", "-z"])?;
-    for entry in status.split('\0').filter(|entry| !entry.is_empty()) {
-        let path = entry.get(3..).unwrap_or_default();
+    for path in status_paths(repo)? {
+        let path = path.as_str();
         if path.ends_with("Cargo.lock") {
             let _ = Git::run(&repo.dir, &["checkout", "--", path]);
             continue;
@@ -88,6 +87,23 @@ fn settle(repo: &Repo, fleet: &Fleet) -> Result<(), Error> {
             repo.name
         )))
     }
+}
+
+// needed helper: raw porcelain paths (Git::output trims, which shifts the XY prefix)
+fn status_paths(repo: &Repo) -> Result<Vec<String>, Error> {
+    let output = std::process::Command::new("git")
+        .args(["status", "--porcelain", "-z"])
+        .current_dir(&repo.dir)
+        .output()
+        .map_err(|error| Error::Io {
+            message: format!("{}: cannot read git status: {error}", repo.name),
+        })?;
+    let text = String::from_utf8_lossy(&output.stdout);
+    Ok(text
+        .split('\0')
+        .filter_map(|entry| entry.get(3..))
+        .map(str::to_string)
+        .collect())
 }
 
 // needed helper: true when the only difference in a manifest is fleet dependency entries

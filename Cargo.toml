@@ -20,6 +20,7 @@ toml_edit = "=0.22.27"
 
 [dev-dependencies]
 tempfile = "=3.27.0"
+rstest = "=0.28.0"
 
 [lints.clippy]
 pedantic = { level = "deny", priority = -1 }

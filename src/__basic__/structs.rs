@@ -31,3 +31,10 @@ pub struct ReleaseStep {
     pub next: Version,
     pub reason: String,
 }
+
+#[derive(Clone, Copy, Debug)]
+pub struct ShimmedTool {
+    pub tool: &'static str,
+    pub repo: &'static str,
+    pub package: &'static str,
+}

@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use atomic_delegate_macros::atomic_delegates;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -41,4 +42,21 @@ pub enum Error {
 
     #[error("{0}")]
     Refused(String),
+}
+
+#[atomic_delegates]
+impl Error {
+    #[must_use]
+    pub fn with_causes(&self) -> String {}
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Error;
+
+    #[test]
+    fn test_usage() {
+        let error = Error::Refused(String::from("no"));
+        assert_eq!(error.with_causes(), "no");
+    }
 }

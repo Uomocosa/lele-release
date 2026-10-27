@@ -9,13 +9,13 @@ pub fn release(
     selection: &basic::enums::Selection,
     dry_run: bool,
 ) -> Result<(), Error> {
-    let steps = select(fleet, fleet.plan(level)?, selection)?;
+    let steps = fleet.select_steps(fleet.plan(level)?, selection)?;
     if steps.is_empty() {
         println!("nothing to release — every repo matches its tag and every pin is current");
         return Ok(());
     }
     for step in &steps {
-        let repo = repo_of(fleet, &step.repo)?;
+        let repo = fleet.repo_named(&step.repo)?;
         repo.ensure_ready(fleet)?;
         println!("preflight ✓ {:<28} clean · main · in sync", repo.name);
     }
@@ -35,7 +35,7 @@ pub fn release(
     println!();
     for step in &steps {
         let fresh = Fleet::try_from(fleet.root.as_path())?;
-        let repo = repo_of(&fresh, &step.repo)?;
+        let repo = fresh.repo_named(&step.repo)?;
         Repo::release(repo, &step.next)?;
         println!(
             "[{}] {:<28} {} · tag v{} · pushed",
@@ -54,41 +54,6 @@ pub fn release(
         );
     }
     Ok(())
-}
-
-// needed helper: apply --only / --exclude to the planned steps
-fn select(
-    fleet: &Fleet,
-    steps: Vec<basic::structs::ReleaseStep>,
-    selection: &basic::enums::Selection,
-) -> Result<Vec<basic::structs::ReleaseStep>, Error> {
-    match selection {
-        basic::enums::Selection::All => Ok(steps),
-        basic::enums::Selection::Only(names) => {
-            for name in names {
-                if !fleet.repos.iter().any(|repo| &repo.name == name) {
-                    return Err(Error::Refused(format!("unknown repo `{name}`")));
-                }
-            }
-            Ok(steps
-                .into_iter()
-                .filter(|step| names.contains(&step.repo))
-                .collect())
-        }
-        basic::enums::Selection::Exclude(names) => Ok(steps
-            .into_iter()
-            .filter(|step| !names.contains(&step.repo))
-            .collect()),
-    }
-}
-
-// needed helper: look up a repo by name
-fn repo_of<'a>(fleet: &'a Fleet, name: &str) -> Result<&'a Repo, Error> {
-    fleet
-        .repos
-        .iter()
-        .find(|repo| repo.name == name)
-        .ok_or_else(|| Error::Refused(format!("unknown repo `{name}`")))
 }
 
 #[cfg(test)]

@@ -30,7 +30,7 @@ setup: install
 
 # Install the prek hooks (fmt/clippy/lint on commit, tests on push).
 hooks:
-    prek install -t pre-commit -t pre-push
+    prek install -t pre-commit -t pre-push -t post-commit
 
 # Show which binary each tool resolves to and its version. A `<fleet>/bin` shim
 # (written by `lele-release setup`) builds the sibling checkout; set

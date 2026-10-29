@@ -38,6 +38,8 @@ enum Cli {
         exclude: Vec<String>,
         #[arg(long)]
         dry_run: bool,
+        #[arg(long, help = "Do not reinstall lele-release after releasing it")]
+        no_install: bool,
     },
     Setup,
     #[command(hide = true)]
@@ -63,9 +65,14 @@ impl Args {
     pub(crate) fn run(self) -> Result<(), Error> {
         let root = Self::fleet_root(&self.root);
         match self.command {
-            Cli::Status => Fleet::try_from(root.as_path())?.status(),
-            Cli::Release { level, only, exclude, dry_run } => {
-                Fleet::try_from(root.as_path())?.release(level, &Cli::selection(only, exclude), dry_run)
+            Cli::Status => {
+                let fleet = Fleet::try_from(root.as_path())?;
+                let result = fleet.status();
+                fleet.warn_if_behind();
+                result
+            }
+            Cli::Release { level, only, exclude, dry_run, no_install } => {
+                Fleet::try_from(root.as_path())?.release(level, &Cli::selection(only, exclude), dry_run, no_install)
             }
             Cli::Setup => Fleet::try_from(root.as_path())?.setup(),
             Cli::Pins { mode, path } => Fleet::filter_stdin_or_pass_through(mode, path.as_deref(), &root),

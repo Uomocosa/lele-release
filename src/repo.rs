@@ -30,6 +30,7 @@ impl Repo {
     pub fn matches_url(&self, url: &str) -> bool {}
     pub fn ensure_ready(&self, fleet: &Fleet) -> Result<(), Error> {}
     pub fn release(&self, next: &Version) -> Result<(), Error> {}
+    pub fn install(&self) -> Result<(), Error> {}
 }
 
 #[atomic_delegates]

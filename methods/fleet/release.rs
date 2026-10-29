@@ -1,13 +1,13 @@
 use crate::Error;
 use crate::basic;
 use crate::fleet::Fleet;
-use crate::repo::Repo;
 
 pub fn release(
     fleet: &Fleet,
     level: basic::enums::Bump,
     selection: &basic::enums::Selection,
     dry_run: bool,
+    no_install: bool,
 ) -> Result<(), Error> {
     let steps = fleet.select_steps(fleet.plan(level)?, selection)?;
     if steps.is_empty() {
@@ -30,28 +30,51 @@ pub fn release(
     if dry_run {
         println!();
         println!("dry run: nothing written");
+        if steps.iter().any(|step| step.repo == "lele-release") {
+            if no_install {
+                println!("install: skipped (--no-install)");
+            } else {
+                println!("install: lele-release via just install (after all repos)");
+            }
+        }
         return Ok(());
     }
     println!();
-    for step in &steps {
-        let fresh = Fleet::try_from(fleet.root.as_path())?;
-        let repo = fresh.repo_named(&step.repo)?;
-        Repo::release(repo, &step.next)?;
-        println!(
-            "[{}] {:<28} {} · tag v{} · pushed",
-            step.repo, step.current, step.next, step.next
-        );
+    let (completed, loop_error) = fleet.run_release_loop(&steps);
+    let mut pending_error: Option<Error> = None;
+    if loop_error.is_none() {
+        match Fleet::try_from(fleet.root.as_path()) {
+            Ok(fresh) => match fresh.plan(level) {
+                Ok(remaining) => {
+                    if remaining.is_empty() {
+                        println!("done: nothing left behind");
+                    } else {
+                        let names: Vec<String> =
+                            remaining.iter().map(|step| step.repo.clone()).collect();
+                        println!(
+                            "note: {} repo(s) still pending: {}",
+                            remaining.len(),
+                            names.join(", ")
+                        );
+                    }
+                }
+                Err(error) => pending_error = Some(error),
+            },
+            Err(error) => pending_error = Some(error),
+        }
     }
-    let remaining = Fleet::try_from(fleet.root.as_path())?.plan(level)?;
-    if remaining.is_empty() {
-        println!("done: nothing left behind");
-    } else {
-        let names: Vec<String> = remaining.iter().map(|step| step.repo.clone()).collect();
-        println!(
-            "note: {} repo(s) still pending: {}",
-            remaining.len(),
-            names.join(", ")
-        );
+    let (installed, install_error) = fleet.install_self(&completed, no_install);
+    if !installed {
+        fleet.warn_if_behind();
+    }
+    if let Some(error) = loop_error {
+        return Err(error);
+    }
+    if let Some(error) = pending_error {
+        return Err(error);
+    }
+    if let Some(error) = install_error {
+        return Err(error);
     }
     Ok(())
 }

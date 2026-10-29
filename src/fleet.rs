@@ -34,6 +34,7 @@ impl Fleet {
         level: basic::enums::Bump,
         selection: &basic::enums::Selection,
         dry_run: bool,
+        no_install: bool,
     ) -> Result<(), Error> {
     }
     pub fn setup(&self) -> Result<(), Error> {}
@@ -48,6 +49,9 @@ impl Fleet {
         root: &Path,
     ) -> Result<(), Error> {
     }
+    #[must_use]
+    pub fn self_install_due(steps: &[basic::structs::ReleaseStep], no_install: bool) -> bool {}
+    pub fn warn_if_behind(&self) {}
 }
 
 #[atomic_delegates]
@@ -74,6 +78,17 @@ impl Fleet {
     pub(crate) fn changed_repos(&self) -> Result<Vec<(String, u64)>, Error> {}
     pub(crate) fn with_transitive_dependents(&self, changed: &[(String, u64)]) -> Vec<String> {}
     pub(crate) fn dependency_first_order(&self, affected: &[String]) -> Result<Vec<String>, Error> {
+    }
+    pub(crate) fn run_release_loop(
+        &self,
+        steps: &[basic::structs::ReleaseStep],
+    ) -> (Vec<basic::structs::ReleaseStep>, Option<Error>) {
+    }
+    pub(crate) fn install_self(
+        &self,
+        completed: &[basic::structs::ReleaseStep],
+        no_install: bool,
+    ) -> (bool, Option<Error>) {
     }
     pub(crate) fn write_shims(&self) -> Result<(), Error> {}
     pub(crate) fn include_pointer(home: &Path) -> Result<(), Error> {}

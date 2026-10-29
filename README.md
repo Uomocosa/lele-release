@@ -108,7 +108,8 @@ lint:            lele-lint .          ->   <fleet>/bin/lele-lint
   binary in `~/.cargo/bin` instead. Use it when the tool is mid-edit and does
   not compile.
 - `lele-release` itself is not shimmed: git runs it as the pins filter on every
-  `git add`, so it stays an installed, stable binary (`just install`).
+  `git add`, so it stays an installed, stable binary (`just install`). A run that
+  released lele-release reinstalls it automatically (see below).
 
 Activate once, in your shell profile, **before** `~/.cargo/bin`:
 
@@ -127,6 +128,7 @@ export PATH="/path/to/fleet/bin:$PATH"
 | `lele-release release <patch\|minor\|major>` | preflight → bump → pin → commit → tag → atomic push, in dependency order |
 | `--only a,b` / `--exclude c` | restrict the release set (mutually exclusive); a full run is the default |
 | `--dry-run` | print the plan and the affected set, write nothing |
+| `--no-install` | skip the automatic `just install` reinstall of lele-release after releasing it |
 | `lele-release setup` | install the git filter and the `<fleet>/bin` tool shims for this machine |
 | `lele-release pins clean\|smudge` | internal, invoked by git; hidden from help |
 
@@ -184,6 +186,11 @@ finished repos and continues with the rest. Because the push is atomic, a repo
 is never left half-released.
 
 The tool never force-pushes, never moves a tag, and never rebases.
+
+After a run that released lele-release it reinstalls itself with `just install`
+at the very end (not mid-run, because the remaining repos' git filters call the
+installed binary). Other repos are never installed. `status` and `release` warn
+when the running binary is older than the latest tag.
 
 ## Pin forms
 

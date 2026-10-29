@@ -1,40 +1,85 @@
 use std::path::{Path, PathBuf};
 
-use crate::fleet::Fleet;
+use crate::Error;
 
-pub fn package_manifests(dir: &Path) -> Vec<PathBuf> {
+pub fn package_manifests(dir: &Path) -> Result<Vec<PathBuf>, Error> {
     let root = dir.join("Cargo.toml");
-    let mut out = Vec::new();
     if !root.exists() {
-        return out;
+        return Ok(Vec::new());
     }
-    let Ok(document) = Fleet::read_manifest(&root) else {
-        return out;
-    };
-    out.push(root);
-    let members = document
-        .get("workspace")
-        .and_then(toml_edit::Item::as_table_like)
-        .and_then(|workspace| workspace.get("members"))
-        .and_then(toml_edit::Item::as_array);
-    if let Some(members) = members {
-        for member in members.iter().filter_map(toml_edit::Value::as_str) {
-            for manifest in Fleet::expand_member(dir, member) {
-                if !out.contains(&manifest) {
-                    out.push(manifest);
-                }
+    let output = std::process::Command::new("cargo")
+        .args([
+            "metadata",
+            "--no-deps",
+            "--format-version",
+            "1",
+            "--offline",
+            "--manifest-path",
+        ])
+        .arg(&root)
+        .output()
+        .map_err(|error| Error::Io {
+            context: format!("cannot run cargo metadata in {}", dir.display()),
+            source: error,
+        })?;
+    if !output.status.success() {
+        return Err(Error::Refused(format!(
+            "{}: cargo metadata failed\n{}",
+            dir.display(),
+            String::from_utf8_lossy(&output.stderr).trim()
+        )));
+    }
+    let metadata: serde_json::Value = serde_json::from_slice(&output.stdout).map_err(|_| {
+        Error::Refused(format!(
+            "{}: cargo metadata output is not JSON",
+            dir.display()
+        ))
+    })?;
+    let mut discovered: Vec<String> = Vec::new();
+    if let Some(packages) = metadata
+        .get("packages")
+        .and_then(serde_json::Value::as_array)
+    {
+        for package in packages {
+            let Some(path) = package
+                .get("manifest_path")
+                .and_then(serde_json::Value::as_str)
+            else {
+                continue;
+            };
+            if !discovered.iter().any(|known| known == path) {
+                discovered.push(path.to_string());
             }
         }
     }
-    out
+    let canonical = dir.canonicalize().unwrap_or_else(|_| dir.to_path_buf());
+    let mut out = vec![root];
+    for absolute in discovered {
+        let anchored = Path::new(&absolute).strip_prefix(&canonical).map_or_else(
+            |_| PathBuf::from(absolute.clone()),
+            |relative| dir.join(relative),
+        );
+        if !out.contains(&anchored) {
+            out.push(anchored);
+        }
+    }
+    Ok(out)
 }
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use super::package_manifests;
 
     #[test]
     fn test_usage() {
-        let _ = package_manifests;
+        let dir = tempfile::tempdir().unwrap();
+        assert_eq!(
+            package_manifests(dir.path()).unwrap(),
+            Vec::<PathBuf>::new()
+        );
+        std::fs::write(dir.path().join("Cargo.toml"), "not toml [[[[").unwrap();
+        assert!(package_manifests(dir.path()).is_err());
     }
 }

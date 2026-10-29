@@ -9,34 +9,33 @@ pub fn verify_staged_lock(repo: &Repo, next: &Version) -> Result<(), Error> {
         return Ok(());
     }
     let staged = Git::output(&repo.dir, &["show", ":Cargo.lock"])?;
-    let mut own = false;
-    let mut found: Option<String> = None;
+    let expected = next.to_string();
+    let mut own: Option<String> = None;
     for line in staged.lines() {
         if line == "[[package]]" {
-            own = false;
-        }
-        if let Some(name) = line
+            own = None;
+        } else if let Some(name) = line
             .strip_prefix("name = \"")
             .and_then(|rest| rest.strip_suffix('"'))
         {
-            own = repo.packages.iter().any(|package| package.name == name);
-        } else if own
-            && let Some(version) = line
-                .strip_prefix("version = \"")
-                .and_then(|rest| rest.strip_suffix('"'))
+            if repo.packages.iter().any(|package| package.name == name) {
+                own = Some(name.to_string());
+            } else {
+                own = None;
+            }
+        } else if let Some(version) = line
+            .strip_prefix("version = \"")
+            .and_then(|rest| rest.strip_suffix('"'))
+            && let Some(current) = own.take()
+            && version != expected
         {
-            found = Some(version.to_string());
-            break;
+            return Err(Error::Refused(format!(
+                "{}: staged lock says {current} {version}, release is {next}",
+                repo.name
+            )));
         }
     }
-    match found {
-        Some(version) if version == next.to_string() => Ok(()),
-        Some(version) => Err(Error::Refused(format!(
-            "{}: staged lock says {version}, release is {next}",
-            repo.name
-        ))),
-        None => Ok(()),
-    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -87,5 +86,30 @@ mod tests {
         let staged = Git::output(dir, &["show", ":Cargo.lock"]).unwrap();
         assert!(staged.contains("name = \"probe\"\nversion = \"0.0.2\""));
         assert!(staged.contains("name = \"other\"\nversion = \"9.9.9\""));
+
+        let dual = Repo {
+            packages: vec![
+                basic::structs::Package {
+                    name: String::from("probe"),
+                    manifest: dir.join("Cargo.toml"),
+                },
+                basic::structs::Package {
+                    name: String::from("probe-aux"),
+                    manifest: dir.join("aux/Cargo.toml"),
+                },
+            ],
+            ..repo_at(dir)
+        };
+        let mixed = "version = 4\n\n[[package]]\nname = \"probe\"\nversion = \"0.0.2\"\n\n[[package]]\nname = \"probe-aux\"\nversion = \"0.0.1\"\n";
+        std::fs::write(dir.join("Cargo.lock"), mixed).unwrap();
+        dual.stage_version_files().unwrap();
+        assert!(verify_staged_lock(&dual, &next).is_err());
+        let aligned = mixed.replace(
+            "name = \"probe-aux\"\nversion = \"0.0.1\"",
+            "name = \"probe-aux\"\nversion = \"0.0.2\"",
+        );
+        std::fs::write(dir.join("Cargo.lock"), aligned).unwrap();
+        dual.stage_version_files().unwrap();
+        verify_staged_lock(&dual, &next).unwrap();
     }
 }

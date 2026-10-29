@@ -9,6 +9,7 @@ pub fn release(repo: &Repo, next: &Version) -> Result<(), Error> {
     repo.bump_lock_version(next)?;
     repo.stage_version_files()?;
     repo.verify_staged_lock(next)?;
+    repo.refuse_lock_drift()?;
     match repo.commit_tag_and_push(next, &tag) {
         Ok(()) => Ok(()),
         Err(error) => {

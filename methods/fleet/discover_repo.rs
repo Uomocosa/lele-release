@@ -15,7 +15,7 @@ pub fn discover_repo(dir: &Path) -> Result<Option<Repo>, Error> {
         .unwrap_or("unknown")
         .to_string();
     let url = Git::output(dir, &["remote", "get-url", "origin"]).unwrap_or_default();
-    let manifests = Fleet::package_manifests(dir);
+    let manifests = Fleet::package_manifests(dir)?;
     let mut packages = Vec::new();
     let mut workspace: Option<(PathBuf, Version)> = None;
     for manifest in &manifests {

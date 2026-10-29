@@ -84,8 +84,7 @@ impl Fleet {
     pub(crate) fn print_filter(&self) {}
     pub(crate) fn print_plan(&self) -> Result<(), Error> {}
     pub(crate) fn discover_repo(dir: &Path) -> Result<Option<Repo>, Error> {}
-    pub(crate) fn package_manifests(dir: &Path) -> Vec<PathBuf> {}
-    pub(crate) fn expand_member(base: &Path, pattern: &str) -> Vec<PathBuf> {}
+    pub(crate) fn package_manifests(dir: &Path) -> Result<Vec<PathBuf>, Error> {}
     pub(crate) fn workspace_version(document: &DocumentMut) -> Option<Version> {}
     pub(crate) fn package_version(
         packages: &[basic::structs::Package],

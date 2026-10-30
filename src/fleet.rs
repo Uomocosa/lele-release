@@ -84,6 +84,11 @@ impl Fleet {
         steps: &[basic::structs::ReleaseStep],
     ) -> (Vec<basic::structs::ReleaseStep>, Option<Error>) {
     }
+    pub(crate) fn refuse_dirty_after_release(
+        &self,
+        completed: &[basic::structs::ReleaseStep],
+    ) -> Result<(), Error> {
+    }
     pub(crate) fn install_self(
         &self,
         completed: &[basic::structs::ReleaseStep],

@@ -11,7 +11,7 @@ pub fn release(repo: &Repo, next: &Version) -> Result<(), Error> {
     repo.verify_staged_lock(next)?;
     repo.refuse_lock_drift()?;
     match repo.commit_tag_and_push(next, &tag) {
-        Ok(()) => Ok(()),
+        Ok(()) => repo.refresh_index(),
         Err(error) => {
             repo.rollback_to_origin(&tag);
             Err(error)

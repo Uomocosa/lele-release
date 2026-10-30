@@ -47,7 +47,10 @@ pub fn release(
             Ok(fresh) => match fresh.plan(level) {
                 Ok(remaining) => {
                     if remaining.is_empty() {
-                        println!("done: nothing left behind");
+                        match fresh.refuse_dirty_after_release(&completed) {
+                            Ok(()) => println!("done: nothing left behind"),
+                            Err(error) => pending_error = Some(error),
+                        }
                     } else {
                         let names: Vec<String> =
                             remaining.iter().map(|step| step.repo.clone()).collect();

@@ -39,6 +39,7 @@ impl Repo {
     pub(crate) fn run_just_gate(&self) -> Result<(), Error> {}
     pub(crate) fn refuse_unclean_tree(&self, fleet: &Fleet) -> Result<(), Error> {}
     pub(crate) fn refuse_lock_drift(&self) -> Result<(), Error> {}
+    pub(crate) fn refresh_index(&self) -> Result<(), Error> {}
     pub(crate) fn untrimmed_status_paths(&self) -> Result<Vec<String>, Error> {}
     pub(crate) fn has_only_fleet_drift(
         &self,

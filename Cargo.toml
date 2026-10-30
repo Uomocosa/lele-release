@@ -1,6 +1,6 @@
 [package]
 name = "lele-release"
-version = "0.0.9"
+version = "0.0.10"
 edition = "2024"
 rust-version = "1.98"
 description = "Release orchestrator for the lele multi-repo fleet: tag pins in commits, sibling paths in the working tree"
@@ -11,7 +11,7 @@ name = "lele-release"
 path = "src/main.rs"
 
 [dependencies]
-atomic-delegate-macros = { git = "https://github.com/Uomocosa/lele-rust-linter", tag = "v0.0.9" }
+atomic-delegate-macros = { git = "https://github.com/Uomocosa/lele-rust-linter", tag = "v0.0.10" }
 clap = { version = "=4.6.6", features = ["derive"] }
 pathdiff = "=0.2.3"
 semver = "=1.0.27"

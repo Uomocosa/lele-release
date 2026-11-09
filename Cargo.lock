@@ -63,8 +63,8 @@ dependencies = [
 
 [[package]]
 name = "atomic-delegate-macros"
-version = "0.0.11"
-source = "git+https://github.com/Uomocosa/lele-rust-linter?tag=v0.0.11#9a854e5f4ad88d651a8d04ffb13c62a7a8130869"
+version = "0.0.12"
+source = "git+https://github.com/Uomocosa/lele-rust-linter?tag=v0.0.12#0372ea12bce5e4a494b3faec841ae053ff28ca7b"
 dependencies = [
  "lele-snake-case",
  "proc-macro2",
@@ -234,7 +234,7 @@ checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
 name = "lele-release"
-version = "0.0.11"
+version = "0.0.12"
 dependencies = [
  "atomic-delegate-macros",
  "clap",
@@ -249,8 +249,8 @@ dependencies = [
 
 [[package]]
 name = "lele-snake-case"
-version = "0.0.11"
-source = "git+https://github.com/Uomocosa/lele-rust-linter?tag=v0.0.11#9a854e5f4ad88d651a8d04ffb13c62a7a8130869"
+version = "0.0.12"
+source = "git+https://github.com/Uomocosa/lele-rust-linter?tag=v0.0.12#0372ea12bce5e4a494b3faec841ae053ff28ca7b"
 
 [[package]]
 name = "libc"

@@ -33,7 +33,7 @@ pub fn filter_stdin_or_pass_through(
     let is_lock = path.file_name().and_then(|name| name.to_str()) == Some("Cargo.lock");
     let output = match (mode, is_lock) {
         (basic::enums::PinsMode::Clean, true) => fleet.clean_lock(&manifest, &input),
-        (basic::enums::PinsMode::Smudge, true) => fleet.smudge_lock(&manifest, &input),
+        (basic::enums::PinsMode::Smudge, true) => Ok(fleet.smudge_lock(&manifest, &input)),
         (basic::enums::PinsMode::Clean, false) => fleet.clean_manifest(&manifest, &input),
         (basic::enums::PinsMode::Smudge, false) => fleet.smudge_manifest(&manifest, &input),
     };

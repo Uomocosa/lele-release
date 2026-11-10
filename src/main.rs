@@ -3,8 +3,10 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 
+use lele_release::Bump;
 use lele_release::Error;
-use lele_release::basic;
+use lele_release::PinsMode;
+use lele_release::Selection;
 use lele_release::fleet::Fleet;
 
 #[derive(Parser)]
@@ -31,7 +33,7 @@ enum Cli {
     Status,
     Release {
         #[arg(value_parser = Cli::parse_bump)]
-        level: basic::enums::Bump,
+        level: Bump,
         #[arg(long, value_delimiter = ',', conflicts_with = "exclude")]
         only: Vec<String>,
         #[arg(long, value_delimiter = ',')]
@@ -45,7 +47,7 @@ enum Cli {
     #[command(hide = true)]
     Pins {
         #[arg(value_parser = Cli::parse_mode)]
-        mode: basic::enums::PinsMode,
+        mode: PinsMode,
         path: Option<PathBuf>,
     },
 }
@@ -89,27 +91,27 @@ impl Args {
 
 #[rustfmt::skip]
 impl Cli {
-    pub(crate) fn selection(only: Vec<String>, exclude: Vec<String>) -> basic::enums::Selection {
+    pub(crate) fn selection(only: Vec<String>, exclude: Vec<String>) -> Selection {
         if !only.is_empty() {
-            return basic::enums::Selection::Only(only);
+            return Selection::Only(only);
         }
         if !exclude.is_empty() {
-            return basic::enums::Selection::Exclude(exclude);
+            return Selection::Exclude(exclude);
         }
-        basic::enums::Selection::All
+        Selection::All
     }
-    pub(crate) fn parse_bump(value: &str) -> Result<basic::enums::Bump, String> {
+    pub(crate) fn parse_bump(value: &str) -> Result<Bump, String> {
         match value {
-            "patch" => Ok(basic::enums::Bump::Patch),
-            "minor" => Ok(basic::enums::Bump::Minor),
-            "major" => Ok(basic::enums::Bump::Major),
+            "patch" => Ok(Bump::Patch),
+            "minor" => Ok(Bump::Minor),
+            "major" => Ok(Bump::Major),
             other => Err(format!("expected patch|minor|major, got `{other}`")),
         }
     }
-    pub(crate) fn parse_mode(value: &str) -> Result<basic::enums::PinsMode, String> {
+    pub(crate) fn parse_mode(value: &str) -> Result<PinsMode, String> {
         match value {
-            "clean" => Ok(basic::enums::PinsMode::Clean),
-            "smudge" => Ok(basic::enums::PinsMode::Smudge),
+            "clean" => Ok(PinsMode::Clean),
+            "smudge" => Ok(PinsMode::Smudge),
             other => Err(format!("expected clean|smudge, got `{other}`")),
         }
     }

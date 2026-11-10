@@ -42,7 +42,7 @@ impl Fleet {
     pub fn clean_manifest(&self, manifest: &Path, input: &str) -> Result<String, Error> {}
     pub fn smudge_manifest(&self, manifest: &Path, input: &str) -> Result<String, Error> {}
     pub fn clean_lock(&self, lock: &Path, input: &str) -> Result<String, Error> {}
-    pub fn smudge_lock(&self, lock: &Path, input: &str) -> Result<String, Error> {}
+    pub fn smudge_lock(&self, lock: &Path, input: &str) -> String {}
     pub fn filter_stdin_or_pass_through(
         mode: basic::enums::PinsMode,
         path: Option<&Path>,

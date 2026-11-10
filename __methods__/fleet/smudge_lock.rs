@@ -1,12 +1,11 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use crate::Error;
 use crate::fleet::Fleet;
 
-pub fn smudge_lock(fleet: &Fleet, lock: &Path, input: &str) -> Result<String, Error> {
+pub fn smudge_lock(fleet: &Fleet, lock: &Path, input: &str) -> String {
     let Some(current) = fleet.repos.iter().find(|repo| lock.starts_with(&repo.dir)) else {
-        return Ok(input.to_string());
+        return input.to_string();
     };
     let mut versions: HashMap<String, String> = HashMap::new();
     for repo in fleet.repos.iter().filter(|repo| repo.name != current.name) {
@@ -14,7 +13,7 @@ pub fn smudge_lock(fleet: &Fleet, lock: &Path, input: &str) -> Result<String, Er
             versions.insert(package.name.clone(), repo.version.to_string());
         }
     }
-    Ok(current.smudge_lock_text(input, &versions))
+    current.smudge_lock_text(input, &versions)
 }
 
 #[cfg(test)]

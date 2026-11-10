@@ -10,7 +10,7 @@ pub use fleet::Fleet;
 pub mod git;
 pub use git::Git;
 
-#[path = "../methods/mod.rs"]
+#[path = "../__methods__/mod.rs"]
 pub mod methods;
 
 pub mod repo;

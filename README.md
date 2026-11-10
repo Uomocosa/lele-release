@@ -261,10 +261,10 @@ just lint       # lele-lint .
 ```
 
 Layout follows the fleet conventions: one type per `src/` file, method bodies in
-`methods/<type>/<method>.rs`, `__basic__/` for behaviour-free types.
+`__methods__/<type>/<method>.rs`, `__basic__/` for behaviour-free types.
 
 - `src/fleet.rs` — the repo graph and the public operations
 - `src/repo.rs` — one git repo: tags, readiness, the release sequence
-- `methods/fleet/pins.rs` — read pins out of manifests
-- `methods/fleet/clean_manifest.rs` / `smudge_manifest.rs` — the filter transforms
-- `methods/fleet/plan.rs` — changed/affected/order
+- `__methods__/fleet/pins.rs` — read pins out of manifests
+- `__methods__/fleet/clean_manifest.rs` / `smudge_manifest.rs` — the filter transforms
+- `__methods__/fleet/plan.rs` — changed/affected/order

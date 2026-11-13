@@ -80,7 +80,6 @@ impl Repo {
     }
 }
 
-#[rustfmt::skip]
 impl Repo {
     pub(crate) fn rollback_to_origin(&self, tag: &str) {
         let _ = Git::run(&self.dir, &["reset", "--hard", "origin/main"]);

@@ -66,6 +66,7 @@ impl Repo {
         sources: &HashMap<String, (String, String), S>,
     ) -> String {
     }
+    pub(crate) fn merge_duplicate_lock_blocks(&self, blocks: Vec<String>) -> Vec<String> {}
     pub(crate) fn smudge_lock_text<S: BuildHasher>(
         &self,
         input: &str,

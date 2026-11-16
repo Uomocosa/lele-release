@@ -1,0 +1,77 @@
+version = 4
+
+[[package]]
+name = "atomic-delegate-macros"
+version = "0.0.14"
+source = "git+https://github.com/Uomocosa/lele-rust-linter?tag=v0.0.14#8f850b870fbada6ee5a4b346423382a69d13e1d2"
+dependencies = [
+ "lele-snake-case 0.0.14",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+]
+
+[[package]]
+name = "atomic-delegate-macros"
+version = "0.0.14"
+source = "git+https://github.com/Uomocosa/lele-rust-linter?tag=v0.0.14#8f850b870fbada6ee5a4b346423382a69d13e1d2"
+dependencies = [
+ "lele-snake-case 0.0.14 (git+https://github.com/Uomocosa/lele-rust-linter?tag=v0.0.14)",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+]
+
+[[package]]
+name = "lele-snake-case"
+version = "0.0.14"
+source = "git+https://github.com/Uomocosa/lele-rust-linter?tag=v0.0.14#8f850b870fbada6ee5a4b346423382a69d13e1d2"
+
+[[package]]
+name = "lele-snake-case"
+version = "0.0.14"
+source = "git+https://github.com/Uomocosa/lele-rust-linter?tag=v0.0.14#8f850b870fbada6ee5a4b346423382a69d13e1d2"
+
+[[package]]
+name = "common_types"
+version = "0.0.11"
+dependencies = [
+ "atomic-delegate-macros 0.0.14 (git+https://github.com/Uomocosa/lele-rust-linter?tag=v0.0.14)",
+ "bevy_ecs",
+ "bevy_reflect",
+ "bincode",
+ "blake3",
+ "derive_more",
+ "lele-bevy-state-machine",
+ "libp2p-identity",
+ "multiaddr",
+ "rstest",
+ "serde",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "freenet-contract-harness"
+version = "0.0.12"
+source = "git+https://github.com/Uomocosa/freenet-contract-harness?tag=v0.0.12#85fa8b1981e5e193f115fb00ad11a862a2ed7a4d"
+dependencies = [
+ "atomic-delegate-macros 0.0.14 (git+https://github.com/Uomocosa/lele-rust-linter?tag=v0.0.14)",
+ "bincode",
+ "freenet-stdlib",
+ "serde",
+]
+
+[[package]]
+name = "lele-bevy-preview"
+version = "0.0.17"
+source = "git+https://github.com/Uomocosa/telegram-bot-helper?tag=v0.0.17#b0247a3c3cce3e6d625580ff4636900818ba9bb5"
+dependencies = [
+ "atomic-delegate-macros 0.0.14",
+ "bevy",
+ "blake3",
+ "derive_more",
+ "image",
+ "telegram-bot-helper",
+ "thiserror 2.0.21",
+ "tracing",
+]

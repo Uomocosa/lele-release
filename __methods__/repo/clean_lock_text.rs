@@ -9,20 +9,20 @@ pub fn clean_lock_text<S: BuildHasher>(
     input: &str,
     sources: &HashMap<String, (String, String), S>,
 ) -> String {
-    let mut out = String::new();
+    let mut out: Vec<String> = Vec::new();
     let mut block = String::new();
     for line in input.lines() {
         if line == "[[package]]" && !block.is_empty() {
-            out.push_str(&current.clean_lock_block(&block, sources));
+            out.push(current.clean_lock_block(&block, sources));
             block.clear();
         }
         block.push_str(line);
         block.push('\n');
     }
     if !block.is_empty() {
-        out.push_str(&current.clean_lock_block(&block, sources));
+        out.push(current.clean_lock_block(&block, sources));
     }
-    out
+    current.merge_duplicate_lock_blocks(out).concat()
 }
 
 #[cfg(test)]

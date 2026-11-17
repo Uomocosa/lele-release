@@ -1,11 +1,10 @@
 use std::path::Path;
 
 use crate::Error;
+use crate::git::Git;
 
 pub fn run(dir: &Path, args: &[&str]) -> Result<(), Error> {
-    let command = std::process::Command::new("git")
-        .args(args)
-        .current_dir(dir)
+    let command = Git::command_without_repo_environment(dir, args)
         .output()
         .map_err(|error| Error::Io {
             context: format!("cannot run git in {}", dir.display()),

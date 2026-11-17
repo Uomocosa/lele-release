@@ -1,4 +1,5 @@
 use crate::Error;
+use crate::git::Git;
 use crate::repo::Repo;
 
 pub fn refuse_lock_drift(repo: &Repo) -> Result<(), Error> {
@@ -20,14 +21,13 @@ pub fn refuse_lock_drift(repo: &Repo) -> Result<(), Error> {
             String::from_utf8_lossy(&update.stderr).trim()
         )));
     }
-    let diff = std::process::Command::new("git")
-        .args(["diff", "--quiet", "--", "Cargo.lock"])
-        .current_dir(&repo.dir)
-        .output()
-        .map_err(|error| Error::Io {
-            context: format!("{}: cannot run git diff", repo.name),
-            source: error,
-        })?;
+    let diff =
+        Git::command_without_repo_environment(&repo.dir, &["diff", "--quiet", "--", "Cargo.lock"])
+            .output()
+            .map_err(|error| Error::Io {
+                context: format!("{}: cannot run git diff", repo.name),
+                source: error,
+            })?;
     if diff.status.success() {
         return Ok(());
     }

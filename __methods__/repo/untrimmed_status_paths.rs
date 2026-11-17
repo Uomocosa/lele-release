@@ -1,10 +1,9 @@
 use crate::Error;
+use crate::git::Git;
 use crate::repo::Repo;
 
 pub fn untrimmed_status_paths(repo: &Repo) -> Result<Vec<String>, Error> {
-    let output = std::process::Command::new("git")
-        .args(["status", "--porcelain", "-z"])
-        .current_dir(&repo.dir)
+    let output = Git::command_without_repo_environment(&repo.dir, &["status", "--porcelain", "-z"])
         .output()
         .map_err(|error| Error::Io {
             context: format!("{}: cannot read git status", repo.name),

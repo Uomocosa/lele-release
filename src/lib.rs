@@ -1,6 +1,8 @@
 #[path = "__basic__/mod.rs"]
 mod basic;
 
+mod constants;
+
 pub use basic::enums::{Bump, PinForm, PinsMode, Selection};
 pub use basic::structs::{Dependency, Package, Pin, ReleaseStep, ShimmedTool};
 

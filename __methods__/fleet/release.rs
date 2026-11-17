@@ -29,6 +29,10 @@ pub fn release(
     }
     if dry_run {
         println!();
+        for step in &steps {
+            let repo = fleet.repo_named(&step.repo)?;
+            Fleet::print_relinked_pins(&fleet.relink_tag_pins(repo, true)?);
+        }
         println!("dry run: nothing written");
         if steps.iter().any(|step| step.repo == "lele-release") {
             if no_install {

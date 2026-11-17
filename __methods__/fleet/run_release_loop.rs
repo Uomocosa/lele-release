@@ -15,7 +15,10 @@ pub fn run_release_loop(
             Err(error) => return (completed, Some(error)),
         };
         let outcome = match fresh.repo_named(&step.repo) {
-            Ok(repo) => Repo::release(repo, &step.next),
+            Ok(repo) => fresh.relink_tag_pins(repo, false).and_then(|relinked| {
+                Fleet::print_relinked_pins(&relinked);
+                Repo::release(repo, &step.next)
+            }),
             Err(error) => Err(error),
         };
         match outcome {

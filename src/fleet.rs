@@ -39,6 +39,12 @@ impl Fleet {
     }
     pub fn setup(&self) -> Result<(), Error> {}
     pub fn pins(&self, repo: &Repo) -> Result<Vec<basic::structs::Pin>, Error> {}
+    pub fn relink_tag_pins(
+        &self,
+        repo: &Repo,
+        dry_run: bool,
+    ) -> Result<Vec<basic::structs::Pin>, Error> {
+    }
     pub fn clean_manifest(&self, manifest: &Path, input: &str) -> Result<String, Error> {}
     pub fn smudge_manifest(&self, manifest: &Path, input: &str) -> Result<String, Error> {}
     pub fn clean_lock(&self, lock: &Path, input: &str) -> Result<String, Error> {}
@@ -200,6 +206,16 @@ impl Fleet {
             basic::enums::PinForm::Git(url) => format!("git {url}"),
         }
     }
+    pub(crate) fn print_relinked_pins(pins: &[basic::structs::Pin]) {
+        for pin in pins {
+            println!(
+                "relink  {}  {}  {} -> path (will pin current)",
+                pin.dependent,
+                pin.dependency,
+                Self::form_label(&pin.form)
+            );
+        }
+    }
 }
 
 #[cfg(test)]
@@ -218,6 +234,7 @@ mod tests {
         let _ = Fleet::release;
         let _ = Fleet::setup;
         let _ = Fleet::pins;
+        let _ = Fleet::relink_tag_pins;
         let _ = Fleet::clean_manifest;
         let _ = Fleet::smudge_manifest;
         let _ = Fleet::clean_lock;

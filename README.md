@@ -170,15 +170,29 @@ Per repo, in order:
 
 ```text
 1. fetch · clean tree · on main · HEAD == origin/main · version == latest tag
-2. bump the version in [package] or [workspace.package]
-3. normalise Cargo.lock: every fleet dependency entry gets the git source of
+2. re-link every fleet dependency pinned by tag/rev to its sibling path form
+   (working tree only; Cargo.lock is re-smudged to the same local form)
+3. bump the version in [package] or [workspace.package]
+4. normalise Cargo.lock: every fleet dependency entry gets the git source of
    its dependency's new tag (offline; the SHA comes from the tag itself)
-4. git add (every manifest + Cargo.lock) · commit "chore(release): X.Y.Z"
+5. git add (every manifest + Cargo.lock) · commit "chore(release): X.Y.Z"
    — the clean filter writes the pins here
-5. git tag -a vX.Y.Z
-6. git push --atomic origin main vX.Y.Z          (pre-push hooks run here)
-7. on rejection: reset --hard origin/main and delete the local tag
+6. git tag -a vX.Y.Z
+7. git push --atomic origin main vX.Y.Z          (pre-push hooks run here)
+8. on rejection: reset --hard origin/main and delete the local tag
 ```
+
+Step 2 also covers a working tree that already holds the committed pin form: a
+fleet dependency left as `git` + `tag` is converted back to its sibling path
+before the release, so the clean filter records the dependency's **current** tag
+instead of the stale one. Each re-link prints
+
+```text
+relink  <repo>  <dependency>  tag vX.Y.Z -> path (will pin current)
+```
+
+and `--dry-run` prints the same lines without writing anything, so a release can
+never ship a pin that is already behind its dependency.
 
 There is no ledger and no `--resume`: a repo is "done" when its version equals
 its tag and it has no commits since it. Re-running after an interruption skips

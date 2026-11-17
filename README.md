@@ -149,14 +149,17 @@ release level *args:
 
 ```text
 changed(r) = commits since r's latest tag > 0          (no tag at all also counts)
-stale(r)   = a pin in r does not point at its dependency's latest tag
-affected   = changed ∪ every transitive dependent of a changed repo
+stale(r)   = a tag/rev pin in r is behind its dependency's latest tag
+affected   = changed ∪ stale ∪ every transitive dependent of those
 ```
 
 - A dependency change forces its dependents to re-pin, and a re-pin is a
   manifest change, so dependents are released in the same run. After a full run
   `changed` and `stale` are both empty, and the next run prints
   `nothing to release`. No repo is ever left behind by accident.
+- A stale repo is planned even with no commits since its own tag; its reason
+  reads `pin behind: <dependency> vX -> vY` (plus ` +N` when more pins are
+  behind), and `--dry-run` prints the re-link lines for it.
 - `--only`/`--exclude` deliberately leave work pending; `status` shows it and
   the next full run picks it up.
 - Order is dependency-first (Kahn). A cycle is a refusal, never a guess.

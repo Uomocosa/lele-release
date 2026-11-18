@@ -10,5 +10,3 @@ pub const GIT_REPO_LOCATING_ENV_VAR_NAMES: [&str; 8] = [
     "GIT_ALTERNATE_OBJECT_DIRECTORIES",
     "GIT_NAMESPACE",
 ];
-
-// no test_usage necessary

@@ -108,7 +108,7 @@ mod tests {
     use crate::basic;
     use crate::repo::Repo;
 
-    const FIXTURE: &str = include_str!("../../tests/fixtures/plugin_406155c_duplicate_blocks.lock");
+    const FIXTURE: &str = include_str!("../../fixtures/plugin_406155c_duplicate_blocks.lock");
     const GIT: &str = "git+https://github.com/Uomocosa/lele-rust-linter?tag=v0.0.14";
 
     fn repo() -> Repo {

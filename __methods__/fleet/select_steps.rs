@@ -31,22 +31,11 @@ pub fn select_steps(
 mod tests {
     use std::path::PathBuf;
 
-    use semver::Version;
-
     use super::select_steps;
     use crate::Error;
     use crate::Fleet;
-    use crate::ReleaseStep;
     use crate::Selection;
-
-    fn step(repo: &str) -> ReleaseStep {
-        ReleaseStep {
-            repo: repo.to_string(),
-            current: Version::new(0, 0, 1),
-            next: Version::new(0, 0, 2),
-            reason: String::new(),
-        }
-    }
+    use crate::testing;
 
     #[test]
     fn test_usage() {
@@ -55,7 +44,7 @@ mod tests {
             repos: Vec::new(),
             dependencies: Vec::new(),
         };
-        let steps = vec![step("a"), step("b")];
+        let steps = vec![testing::release_step("a"), testing::release_step("b")];
         let all = select_steps(&fleet, steps.clone(), &Selection::All).unwrap();
         assert_eq!(all.len(), 2);
         let excluded =

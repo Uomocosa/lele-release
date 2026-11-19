@@ -24,15 +24,11 @@ mod tests {
     use std::process::Command;
 
     use super::Git;
+    use crate::testing;
 
     const SIBLING_REPO_PATH_ENV_VAR: &str = "LELE_RELEASE_TEST_SIBLING_REPO";
     const CALLER_REPO_ORIGIN: &str = "https://example.com/caller";
     const SIBLING_REPO_ORIGIN: &str = "https://example.com/sibling";
-
-    fn repo_with_origin(dir: &Path, origin: &str) {
-        Git::run(dir, &["init", "-q", "-b", "main"]).unwrap();
-        Git::run(dir, &["remote", "add", "origin", origin]).unwrap();
-    }
 
     #[test]
     fn test_usage() {
@@ -46,8 +42,8 @@ mod tests {
     fn does_not_inherit_the_callers_repository_environment() {
         let caller = tempfile::tempdir().unwrap();
         let sibling = tempfile::tempdir().unwrap();
-        repo_with_origin(caller.path(), CALLER_REPO_ORIGIN);
-        repo_with_origin(sibling.path(), SIBLING_REPO_ORIGIN);
+        testing::repo_with_origin(caller.path(), CALLER_REPO_ORIGIN);
+        testing::repo_with_origin(sibling.path(), SIBLING_REPO_ORIGIN);
 
         let child = Command::new(std::env::current_exe().unwrap())
             .args([

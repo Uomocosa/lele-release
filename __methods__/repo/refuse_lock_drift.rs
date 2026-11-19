@@ -46,33 +46,15 @@ pub fn refuse_lock_drift(repo: &Repo) -> Result<(), Error> {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
-
     use semver::Version;
 
     use super::refuse_lock_drift;
-    use crate::basic;
     use crate::git::Git;
-    use crate::repo::Repo;
+    use crate::testing;
 
     const MANIFEST: &str = "[package]\nname = \"probe\"\nversion = \"0.0.2\"\nedition = \"2021\"\n";
     const MAIN: &str = "fn main() {}\n";
     const STALE_LOCK: &str = "version = 4\n\n[[package]]\nname = \"probe\"\nversion = \"0.0.1\"\n";
-
-    fn repo_at(dir: &Path) -> Repo {
-        Repo {
-            name: String::from("probe"),
-            dir: dir.to_path_buf(),
-            url: String::new(),
-            packages: vec![basic::structs::Package {
-                name: String::from("probe"),
-                manifest: dir.join("Cargo.toml"),
-            }],
-            manifests: vec![dir.join("Cargo.toml")],
-            version_manifest: dir.join("Cargo.toml"),
-            version: Version::new(0, 0, 2),
-        }
-    }
 
     #[test]
     fn test_usage() {
@@ -84,7 +66,7 @@ mod tests {
         std::fs::write(dir.join("Cargo.lock"), STALE_LOCK).unwrap();
         Git::run(dir, &["init", "-q", "-b", "main"]).unwrap();
         Git::run(dir, &["add", "--", "Cargo.toml", "Cargo.lock"]).unwrap();
-        let repo = repo_at(dir);
+        let repo = testing::repo("probe", dir, "", "probe", Version::new(0, 0, 2));
 
         assert!(refuse_lock_drift(&repo).is_err());
 

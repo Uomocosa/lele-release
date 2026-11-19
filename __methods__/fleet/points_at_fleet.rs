@@ -38,28 +38,28 @@ mod tests {
     use super::points_at_fleet;
     use crate::basic;
     use crate::fleet::Fleet;
-    use crate::repo::Repo;
-
-    fn repo(name: &str, url: &str) -> Repo {
-        Repo {
-            name: name.to_string(),
-            dir: PathBuf::new(),
-            url: url.to_string(),
-            packages: Vec::new(),
-            manifests: Vec::new(),
-            version_manifest: PathBuf::new(),
-            version: Version::new(0, 0, 0),
-        }
-    }
+    use crate::testing;
 
     #[test]
     fn test_usage() {
         let fleet = Fleet {
             root: PathBuf::new(),
-            repos: vec![repo("other", "https://example.com/other.git")],
+            repos: vec![testing::repo(
+                "other",
+                Path::new(""),
+                "https://example.com/other.git",
+                "other",
+                Version::new(0, 0, 0),
+            )],
             dependencies: Vec::new(),
         };
-        let me = repo("me", "https://example.com/me.git");
+        let me = testing::repo(
+            "me",
+            Path::new(""),
+            "https://example.com/me.git",
+            "me",
+            Version::new(0, 0, 0),
+        );
         let document: DocumentMut = "dep = { git = \"https://example.com/other.git\" }"
             .parse()
             .unwrap();

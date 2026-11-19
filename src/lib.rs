@@ -20,3 +20,6 @@ mod methods;
 
 pub mod repo;
 pub use repo::Repo;
+
+#[cfg(test)]
+pub(crate) mod testing;

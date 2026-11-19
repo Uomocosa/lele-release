@@ -86,48 +86,13 @@ pub fn plan(
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
-
     use semver::Version;
 
     use super::plan;
     use crate::basic;
     use crate::fleet::Fleet;
     use crate::git::Git;
-    use crate::repo::Repo;
-
-    fn repo(name: &str, dir: &Path, url: &str, package: &str, version: Version) -> Repo {
-        let manifest = dir.join("Cargo.toml");
-        Repo {
-            name: name.to_string(),
-            dir: dir.to_path_buf(),
-            url: url.to_string(),
-            packages: vec![basic::structs::Package {
-                name: package.to_string(),
-                manifest: manifest.clone(),
-            }],
-            manifests: vec![manifest.clone()],
-            version_manifest: manifest,
-            version,
-        }
-    }
-
-    fn commit_tag(dir: &Path, message: &str, tag: &str) {
-        Git::run(
-            dir,
-            &[
-                "-c",
-                "user.name=t",
-                "-c",
-                "user.email=t@t",
-                "commit",
-                "-qm",
-                message,
-            ],
-        )
-        .unwrap();
-        Git::run(dir, &["tag", "-a", tag, "-m", tag]).unwrap();
-    }
+    use crate::testing;
 
     #[test]
     fn test_usage() {
@@ -149,14 +114,14 @@ mod tests {
         .unwrap();
         Git::run(&sibling_dir, &["init", "-q", "-b", "main"]).unwrap();
         Git::run(&sibling_dir, &["add", "--", "Cargo.toml"]).unwrap();
-        commit_tag(&sibling_dir, "v0.0.1", "v0.0.1");
+        testing::commit_tag(&sibling_dir, "v0.0.1", "v0.0.1");
         std::fs::write(
             sibling_dir.join("Cargo.toml"),
             "[package]\nname = \"dep\"\nversion = \"0.0.2\"\n",
         )
         .unwrap();
         Git::run(&sibling_dir, &["add", "--", "Cargo.toml"]).unwrap();
-        commit_tag(&sibling_dir, "v0.0.2", "v0.0.2");
+        testing::commit_tag(&sibling_dir, "v0.0.2", "v0.0.2");
 
         std::fs::write(
             dependent_dir.join("Cargo.toml"),
@@ -165,19 +130,19 @@ mod tests {
         .unwrap();
         Git::run(&dependent_dir, &["init", "-q", "-b", "main"]).unwrap();
         Git::run(&dependent_dir, &["add", "--", "Cargo.toml"]).unwrap();
-        commit_tag(&dependent_dir, "v0.0.1", "v0.0.1");
+        testing::commit_tag(&dependent_dir, "v0.0.1", "v0.0.1");
 
         let fleet = Fleet {
             root: tmp.path().to_path_buf(),
             repos: vec![
-                repo(
+                testing::repo(
                     "dependent",
                     &dependent_dir,
                     "https://example.com/dependent.git",
                     "dependent",
                     Version::new(0, 0, 1),
                 ),
-                repo(
+                testing::repo(
                     "dep",
                     &sibling_dir,
                     "https://example.com/dep.git",

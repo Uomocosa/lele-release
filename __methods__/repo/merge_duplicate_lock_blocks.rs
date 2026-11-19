@@ -99,59 +99,14 @@ pub fn merge_duplicate_lock_blocks(_current: &Repo, blocks: Vec<String>) -> Vec<
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-    use std::path::PathBuf;
+    use std::path::Path;
 
     use semver::Version;
 
     use super::merge_duplicate_lock_blocks;
-    use crate::basic;
-    use crate::repo::Repo;
+    use crate::testing;
 
     const FIXTURE: &str = include_str!("../../fixtures/plugin_406155c_duplicate_blocks.lock");
-    const GIT: &str = "git+https://github.com/Uomocosa/lele-rust-linter?tag=v0.0.14";
-
-    fn repo() -> Repo {
-        let dir = PathBuf::from("/nonexistent/probe");
-        Repo {
-            name: String::from("probe"),
-            dir: dir.clone(),
-            url: String::new(),
-            packages: vec![basic::structs::Package {
-                name: String::from("common_types"),
-                manifest: dir.join("Cargo.toml"),
-            }],
-            manifests: vec![dir.join("Cargo.toml")],
-            version_manifest: dir.join("Cargo.toml"),
-            version: Version::new(0, 0, 11),
-        }
-    }
-
-    fn sources() -> HashMap<String, (String, String)> {
-        ["atomic-delegate-macros", "lele-snake-case"]
-            .into_iter()
-            .map(|name| {
-                (
-                    name.to_string(),
-                    (
-                        String::from("0.0.14"),
-                        format!("{GIT}#8f850b870fbada6ee5a4b346423382a69d13e1d2"),
-                    ),
-                )
-            })
-            .collect()
-    }
-
-    fn versions() -> HashMap<String, String> {
-        ["atomic-delegate-macros", "lele-snake-case"]
-            .into_iter()
-            .map(|name| (name.to_string(), String::from("0.0.14")))
-            .collect()
-    }
-
-    fn count(text: &str, name: &str) -> usize {
-        text.matches(&format!("\nname = \"{name}\"\n")).count()
-    }
 
     #[test]
     fn test_usage() {
@@ -160,9 +115,22 @@ mod tests {
 
     #[test]
     fn test_clean_merges_path_and_git_blocks() {
-        let cleaned = repo().clean_lock_text(FIXTURE, &sources());
-        assert_eq!(count(&cleaned, "atomic-delegate-macros"), 1);
-        assert_eq!(count(&cleaned, "lele-snake-case"), 1);
+        let repo = testing::repo(
+            "probe",
+            Path::new("/nonexistent/probe"),
+            "",
+            "common_types",
+            Version::new(0, 0, 11),
+        );
+        let cleaned = repo.clean_lock_text(FIXTURE, &testing::fleet_lock_sources());
+        assert_eq!(
+            testing::lock_package_block_count(&cleaned, "atomic-delegate-macros"),
+            1
+        );
+        assert_eq!(
+            testing::lock_package_block_count(&cleaned, "lele-snake-case"),
+            1
+        );
         assert!(!cleaned.contains("lele-snake-case 0.0.14"));
         assert!(!cleaned.contains("atomic-delegate-macros 0.0.14"));
         assert!(cleaned.contains(" \"atomic-delegate-macros\",\n"));
@@ -172,49 +140,115 @@ mod tests {
 
     #[test]
     fn test_clean_is_idempotent() {
-        let once = repo().clean_lock_text(FIXTURE, &sources());
-        assert_eq!(repo().clean_lock_text(&once, &sources()), once);
+        let repo = testing::repo(
+            "probe",
+            Path::new("/nonexistent/probe"),
+            "",
+            "common_types",
+            Version::new(0, 0, 11),
+        );
+        let once = repo.clean_lock_text(FIXTURE, &testing::fleet_lock_sources());
+        assert_eq!(
+            repo.clean_lock_text(&once, &testing::fleet_lock_sources()),
+            once
+        );
     }
 
     #[test]
     fn test_smudge_of_clean_has_no_duplicate_identity() {
-        let cleaned = repo().clean_lock_text(FIXTURE, &sources());
-        let smudged = repo().smudge_lock_text(&cleaned, &versions());
-        assert_eq!(count(&smudged, "atomic-delegate-macros"), 1);
-        assert_eq!(count(&smudged, "lele-snake-case"), 1);
+        let repo = testing::repo(
+            "probe",
+            Path::new("/nonexistent/probe"),
+            "",
+            "common_types",
+            Version::new(0, 0, 11),
+        );
+        let cleaned = repo.clean_lock_text(FIXTURE, &testing::fleet_lock_sources());
+        let smudged = repo.smudge_lock_text(&cleaned, &testing::fleet_lock_versions());
+        assert_eq!(
+            testing::lock_package_block_count(&smudged, "atomic-delegate-macros"),
+            1
+        );
+        assert_eq!(
+            testing::lock_package_block_count(&smudged, "lele-snake-case"),
+            1
+        );
         assert!(!smudged.contains("source = \"git+https://github.com/Uomocosa/lele-rust-linter"));
-        assert_eq!(repo().smudge_lock_text(&smudged, &versions()), smudged);
+        assert_eq!(
+            repo.smudge_lock_text(&smudged, &testing::fleet_lock_versions()),
+            smudged
+        );
     }
 
     #[test]
     fn test_smudge_merges_blocks_that_become_identical() {
-        let smudged = repo().smudge_lock_text(FIXTURE, &versions());
-        assert_eq!(count(&smudged, "atomic-delegate-macros"), 1);
-        assert_eq!(count(&smudged, "lele-snake-case"), 1);
+        let repo = testing::repo(
+            "probe",
+            Path::new("/nonexistent/probe"),
+            "",
+            "common_types",
+            Version::new(0, 0, 11),
+        );
+        let smudged = repo.smudge_lock_text(FIXTURE, &testing::fleet_lock_versions());
+        assert_eq!(
+            testing::lock_package_block_count(&smudged, "atomic-delegate-macros"),
+            1
+        );
+        assert_eq!(
+            testing::lock_package_block_count(&smudged, "lele-snake-case"),
+            1
+        );
     }
 
     #[test]
     fn test_two_versions_of_non_fleet_package_are_untouched() {
+        let repo = testing::repo(
+            "probe",
+            Path::new("/nonexistent/probe"),
+            "",
+            "common_types",
+            Version::new(0, 0, 11),
+        );
         let lock = "version = 4\n\n[[package]]\nname = \"syn\"\nversion = \"1.0.109\"\n\n[[package]]\nname = \"syn\"\nversion = \"2.0.119\"\n\n[[package]]\nname = \"user\"\nversion = \"0.1.0\"\ndependencies = [\n \"syn 1.0.109\",\n \"syn 2.0.119\",\n]\n";
-        assert_eq!(repo().clean_lock_text(lock, &sources()), lock);
-        assert_eq!(repo().smudge_lock_text(lock, &versions()), lock);
+        assert_eq!(
+            repo.clean_lock_text(lock, &testing::fleet_lock_sources()),
+            lock
+        );
+        assert_eq!(
+            repo.smudge_lock_text(lock, &testing::fleet_lock_versions()),
+            lock
+        );
     }
 
     #[test]
     fn test_blocks_with_different_dependencies_are_left_alone() {
+        let repo = testing::repo(
+            "probe",
+            Path::new("/nonexistent/probe"),
+            "",
+            "common_types",
+            Version::new(0, 0, 11),
+        );
         let block = |dep: &str| {
             format!(
                 "[[package]]\nname = \"twin\"\nversion = \"1.0.0\"\ndependencies = [\n \"{dep}\",\n]\n\n"
             )
         };
         let blocks = vec![block("quote"), block("syn")];
-        assert_eq!(merge_duplicate_lock_blocks(&repo(), blocks.clone()), blocks);
+        assert_eq!(merge_duplicate_lock_blocks(&repo, blocks.clone()), blocks);
     }
 
     #[test]
     fn test_identical_blocks_with_same_dependencies_merge() {
+        let repo = testing::repo(
+            "probe",
+            Path::new("/nonexistent/probe"),
+            "",
+            "common_types",
+            Version::new(0, 0, 11),
+        );
         let block = "[[package]]\nname = \"twin\"\nversion = \"1.0.0\"\n\n".to_string();
-        let merged = merge_duplicate_lock_blocks(&repo(), vec![block.clone(), block.clone()]);
+        let merged = merge_duplicate_lock_blocks(&repo, vec![block.clone(), block.clone()]);
         assert_eq!(merged, vec![format!("{}\n", block.trim_end())]);
     }
 }

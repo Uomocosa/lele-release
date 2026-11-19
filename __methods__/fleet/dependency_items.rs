@@ -24,10 +24,20 @@ pub fn dependency_items(document: &DocumentMut) -> Vec<(String, &Item)> {
 
 #[cfg(test)]
 mod tests {
+    use toml_edit::DocumentMut;
+
     use super::dependency_items;
 
     #[test]
     fn test_usage() {
-        let _ = dependency_items;
+        let document: DocumentMut =
+            "[dependencies]\nalpha = \"1\"\n\n[workspace.dependencies]\nbeta = \"2\"\n"
+                .parse()
+                .unwrap();
+
+        let items = dependency_items(&document);
+
+        let names: Vec<&str> = items.iter().map(|(name, _)| name.as_str()).collect();
+        assert_eq!(names, vec!["alpha", "beta"]);
     }
 }

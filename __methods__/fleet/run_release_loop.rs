@@ -38,9 +38,17 @@ pub fn run_release_loop(
 #[cfg(test)]
 mod tests {
     use super::run_release_loop;
+    use crate::testing;
 
     #[test]
     fn test_usage() {
-        let _ = run_release_loop;
+        let tmp = tempfile::tempdir().unwrap();
+        let fleet = testing::fleet(&tmp.path().join("missing"), Vec::new(), Vec::new());
+        let steps = vec![testing::release_step("probe")];
+
+        let (completed, error) = run_release_loop(&fleet, &steps);
+
+        assert!(completed.is_empty());
+        assert!(error.is_some());
     }
 }

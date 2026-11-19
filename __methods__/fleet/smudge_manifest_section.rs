@@ -58,10 +58,50 @@ pub fn smudge_manifest_section(
 
 #[cfg(test)]
 mod tests {
+    use semver::Version;
+    use toml_edit::DocumentMut;
+
     use super::smudge_manifest_section;
+    use crate::testing;
 
     #[test]
     fn test_usage() {
-        let _ = smudge_manifest_section;
+        let tmp = tempfile::tempdir().unwrap();
+        let dependent_dir = tmp.path().join("dependent");
+        let dep_dir = tmp.path().join("dep");
+        std::fs::create_dir_all(&dependent_dir).unwrap();
+        std::fs::create_dir_all(&dep_dir).unwrap();
+        std::fs::write(
+            dep_dir.join("Cargo.toml"),
+            "[package]\nname = \"dep\"\nversion = \"0.0.2\"\n",
+        )
+        .unwrap();
+        let dependent = testing::repo(
+            "dependent",
+            &dependent_dir,
+            "https://example.com/dependent.git",
+            "dependent",
+            Version::new(0, 0, 1),
+        );
+        let dependency = testing::repo(
+            "dep",
+            &dep_dir,
+            "https://example.com/dep.git",
+            "dep",
+            Version::new(0, 0, 2),
+        );
+        let fleet = testing::fleet(tmp.path(), vec![dependent, dependency], Vec::new());
+        let mut document: DocumentMut =
+            "[dependencies]\ndep = { git = \"https://example.com/dep.git\", tag = \"v0.0.2\" }\n"
+                .parse()
+                .unwrap();
+
+        let touched =
+            smudge_manifest_section(&fleet, &mut document, "dependencies", &dependent_dir);
+
+        assert!(touched);
+        let text = document.to_string();
+        assert!(text.contains("path = \"../dep\""), "{text}");
+        assert!(!text.contains("tag ="), "{text}");
     }
 }

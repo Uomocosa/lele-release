@@ -51,10 +51,41 @@ pub fn setup(fleet: &Fleet) -> Result<(), Error> {
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
+    use std::process::Command;
+
     use super::setup;
+    use crate::testing;
+
+    const CHILD_MARKER: &str = "LELE_RELEASE_TEST_SETUP_HOME";
 
     #[test]
     fn test_usage() {
-        let _ = setup;
+        let Ok(home) = std::env::var(CHILD_MARKER) else {
+            let tmp = tempfile::tempdir().unwrap();
+            let child = Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "--exact",
+                    "methods::fleet::setup::tests::test_usage",
+                    "--nocapture",
+                ])
+                .env(CHILD_MARKER, tmp.path())
+                .env("HOME", tmp.path())
+                .output()
+                .unwrap();
+            let stdout = String::from_utf8_lossy(&child.stdout);
+            assert!(child.status.success(), "{stdout}");
+            assert!(
+                tmp.path().join(".config/git/lele-pins.gitconfig").is_file(),
+                "{stdout}"
+            );
+            assert!(tmp.path().join("bin/lele-lint").is_file(), "{stdout}");
+            return;
+        };
+        let fleet = testing::fleet(Path::new(&home), Vec::new(), Vec::new());
+
+        let result = setup(&fleet);
+
+        assert!(result.is_ok());
     }
 }

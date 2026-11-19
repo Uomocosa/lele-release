@@ -34,10 +34,30 @@ pub fn print_filter(fleet: &Fleet) {
 
 #[cfg(test)]
 mod tests {
+    use semver::Version;
+
     use super::print_filter;
+    use crate::Git;
+    use crate::testing;
 
     #[test]
     fn test_usage() {
-        let _ = print_filter;
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = testing::committed_repo(
+            &tmp.path().join("probe"),
+            "probe",
+            Version::new(0, 0, 1),
+            None,
+        );
+        let fleet = testing::fleet(tmp.path(), vec![repo], Vec::new());
+
+        print_filter(&fleet);
+
+        assert_eq!(fleet.repos.len(), 1);
+        let dir = fleet.repos.first().unwrap().dir.clone();
+        assert!(
+            Git::output(&dir, &["config", "--get", "filter.lele-pins.clean"]).is_err(),
+            "the report must not install the filter"
+        );
     }
 }

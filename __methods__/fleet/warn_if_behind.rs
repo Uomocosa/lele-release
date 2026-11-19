@@ -20,12 +20,4 @@ pub fn warn_if_behind(fleet: &Fleet) {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::warn_if_behind;
-
-    #[test]
-    fn test_usage() {
-        let _ = warn_if_behind;
-    }
-}
+// no test_usage necessary

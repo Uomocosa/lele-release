@@ -20,10 +20,24 @@ pub fn print_plan(fleet: &Fleet) -> Result<(), Error> {
 
 #[cfg(test)]
 mod tests {
+    use semver::Version;
+
     use super::print_plan;
+    use crate::testing;
 
     #[test]
     fn test_usage() {
-        let _ = print_plan;
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = testing::committed_repo(
+            &tmp.path().join("probe"),
+            "probe",
+            Version::new(0, 0, 1),
+            None,
+        );
+        let fleet = testing::fleet(tmp.path(), vec![repo], Vec::new());
+
+        let result = print_plan(&fleet);
+
+        assert!(result.is_ok());
     }
 }

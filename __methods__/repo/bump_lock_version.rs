@@ -40,10 +40,36 @@ pub fn bump_lock_version(repo: &Repo, next: &Version) -> Result<(), Error> {
 
 #[cfg(test)]
 mod tests {
+    use semver::Version;
+
     use super::bump_lock_version;
+    use crate::testing;
+
+    const LOCK: &str = "version = 4\n\n[[package]]\nname = \"probe\"\nversion = \"0.0.1\"\n\n[[package]]\nname = \"other\"\nversion = \"9.9.9\"\n";
 
     #[test]
     fn test_usage() {
-        let _ = bump_lock_version;
+        let tmp = tempfile::tempdir().unwrap();
+        std::fs::write(tmp.path().join("Cargo.lock"), LOCK).unwrap();
+        let repo = testing::repo(
+            "probe",
+            tmp.path(),
+            "https://example.com/probe.git",
+            "probe",
+            Version::new(0, 0, 1),
+        );
+
+        let result = bump_lock_version(&repo, &Version::new(0, 0, 2));
+
+        assert!(result.is_ok());
+        let bumped = std::fs::read_to_string(tmp.path().join("Cargo.lock")).unwrap();
+        assert!(
+            bumped.contains("name = \"probe\"\nversion = \"0.0.2\""),
+            "{bumped}"
+        );
+        assert!(
+            bumped.contains("name = \"other\"\nversion = \"9.9.9\""),
+            "{bumped}"
+        );
     }
 }

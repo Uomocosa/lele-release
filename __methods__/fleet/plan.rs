@@ -96,7 +96,26 @@ mod tests {
 
     #[test]
     fn test_usage() {
-        let _ = plan;
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = testing::committed_repo(
+            &tmp.path().join("probe"),
+            "probe",
+            Version::new(0, 0, 1),
+            None,
+        );
+        let fleet = testing::fleet(tmp.path(), vec![repo], Vec::new());
+
+        let steps = plan(&fleet, basic::enums::Bump::Patch).unwrap();
+
+        assert_eq!(steps.len(), 1);
+        assert_eq!(
+            steps.first().map(|step| step.reason.as_str()),
+            Some("first release")
+        );
+        assert_eq!(
+            steps.first().map(|step| step.next.clone()),
+            Some(Version::new(0, 0, 1))
+        );
     }
 
     #[test]

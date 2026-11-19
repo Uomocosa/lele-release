@@ -13,10 +13,23 @@ pub fn tag_or_pushed_rev(dependency: &Repo) -> Result<(bool, String), Error> {
 
 #[cfg(test)]
 mod tests {
+    use semver::Version;
+
     use super::tag_or_pushed_rev;
+    use crate::testing;
 
     #[test]
     fn test_usage() {
-        let _ = tag_or_pushed_rev;
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = testing::committed_repo(
+            &tmp.path().join("probe"),
+            "probe",
+            Version::new(0, 0, 2),
+            Some("v0.0.2"),
+        );
+
+        let tagged = tag_or_pushed_rev(&repo);
+
+        assert_eq!(tagged.unwrap(), (true, String::from("v0.0.2")));
     }
 }

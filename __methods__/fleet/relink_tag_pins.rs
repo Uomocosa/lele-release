@@ -70,7 +70,37 @@ mod tests {
 
     #[test]
     fn test_usage() {
-        let _ = relink_tag_pins;
+        let tmp = tempfile::tempdir().unwrap();
+        let dependent_dir = tmp.path().join("dependent");
+        let dependent = testing::committed_repo(
+            &dependent_dir,
+            "dependent",
+            Version::new(0, 0, 1),
+            Some("v0.0.1"),
+        );
+        let dependency = testing::committed_repo(
+            &tmp.path().join("dep"),
+            "dep",
+            Version::new(0, 0, 2),
+            Some("v0.0.2"),
+        );
+        std::fs::write(
+            dependent_dir.join("Cargo.toml"),
+            "[package]\nname = \"dependent\"\nversion = \"0.0.1\"\n\n[dependencies]\ndep = { git = \"https://example.com/dep.git\", tag = \"v0.0.1\" }\n",
+        )
+        .unwrap();
+        let fleet = testing::fleet(tmp.path(), vec![dependent, dependency], Vec::new());
+        let repo = fleet
+            .repos
+            .iter()
+            .find(|repo| repo.name == "dependent")
+            .unwrap();
+
+        let relinked = relink_tag_pins(&fleet, repo, true).unwrap();
+
+        assert_eq!(relinked.len(), 1);
+        let manifest = std::fs::read_to_string(dependent_dir.join("Cargo.toml")).unwrap();
+        assert!(manifest.contains("tag = \"v0.0.1\""), "{manifest}");
     }
 
     #[test]

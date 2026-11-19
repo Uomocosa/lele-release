@@ -21,10 +21,25 @@ pub fn pin_form(table: &dyn toml_edit::TableLike) -> Option<basic::enums::PinFor
 
 #[cfg(test)]
 mod tests {
+    use toml_edit::DocumentMut;
+    use toml_edit::Item;
+
     use super::pin_form;
+    use crate::basic;
 
     #[test]
     fn test_usage() {
-        let _ = pin_form;
+        let document: DocumentMut =
+            "[dep]\ngit = \"https://example.com/dep.git\"\ntag = \"v0.0.2\"\n"
+                .parse()
+                .unwrap();
+        let table = document.get("dep").and_then(Item::as_table_like).unwrap();
+
+        let form = pin_form(table);
+
+        assert_eq!(
+            form,
+            Some(basic::enums::PinForm::Tag(String::from("v0.0.2")))
+        );
     }
 }

@@ -14,12 +14,26 @@ pub fn command_without_repo_environment(dir: &Path, args: &[&str]) -> Command {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
-
     use super::command_without_repo_environment;
 
     #[test]
     fn test_usage() {
-        let _ = command_without_repo_environment(Path::new("."), &["status"]);
+        let dir = tempfile::tempdir().unwrap();
+
+        let command = command_without_repo_environment(dir.path(), &["status"]);
+
+        assert_eq!(command.get_current_dir(), Some(dir.path()));
+        assert_eq!(
+            command
+                .get_args()
+                .map(|argument| argument.to_str().unwrap())
+                .collect::<Vec<_>>(),
+            vec!["status"]
+        );
+        assert!(
+            command
+                .get_envs()
+                .any(|(name, value)| name.to_string_lossy() == "GIT_DIR" && value.is_none())
+        );
     }
 }

@@ -19,10 +19,34 @@ pub fn with_transitive_dependents(fleet: &Fleet, changed: &[(String, u64)]) -> V
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
+
     use super::with_transitive_dependents;
+    use crate::basic;
+    use crate::testing;
 
     #[test]
     fn test_usage() {
-        let _ = with_transitive_dependents;
+        let edge = |dependent: &str, dependency: &str| basic::structs::Dependency {
+            dependent: String::from(dependent),
+            dependency: String::from(dependency),
+        };
+        let fleet = testing::fleet(
+            Path::new("/fleet"),
+            Vec::new(),
+            vec![edge("middle", "app"), edge("top", "middle")],
+        );
+        let changed = vec![(String::from("app"), 1_u64)];
+
+        let affected = with_transitive_dependents(&fleet, &changed);
+
+        assert_eq!(
+            affected,
+            vec![
+                String::from("app"),
+                String::from("middle"),
+                String::from("top"),
+            ]
+        );
     }
 }

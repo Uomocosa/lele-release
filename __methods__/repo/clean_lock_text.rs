@@ -27,10 +27,34 @@ pub fn clean_lock_text<S: BuildHasher>(
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
+
+    use semver::Version;
+
     use super::clean_lock_text;
+    use crate::testing;
+
+    const TEXT: &str = "[[package]]\nname = \"probe\"\nversion = \"0.0.1\"\n\n[[package]]\nname = \"other\"\nversion = \"9.9.9\"\n";
 
     #[test]
     fn test_usage() {
-        let _ = clean_lock_text::<std::hash::RandomState>;
+        let repo = testing::repo(
+            "probe",
+            Path::new("/nonexistent/probe"),
+            "",
+            "probe",
+            Version::new(0, 0, 2),
+        );
+
+        let cleaned = clean_lock_text(&repo, TEXT, &testing::fleet_lock_sources());
+
+        assert!(
+            cleaned.contains("name = \"probe\"\nversion = \"0.0.2\""),
+            "{cleaned}"
+        );
+        assert!(
+            cleaned.contains("name = \"other\"\nversion = \"9.9.9\""),
+            "{cleaned}"
+        );
     }
 }

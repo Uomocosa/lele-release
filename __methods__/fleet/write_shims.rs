@@ -58,9 +58,18 @@ pub fn write_shims(fleet: &Fleet) -> Result<(), Error> {
 #[cfg(test)]
 mod tests {
     use super::write_shims;
+    use crate::testing;
 
     #[test]
     fn test_usage() {
-        let _ = write_shims;
+        let tmp = tempfile::tempdir().unwrap();
+        let fleet = testing::fleet(tmp.path(), Vec::new(), Vec::new());
+
+        let result = write_shims(&fleet);
+
+        assert!(result.is_ok());
+        for tool in ["lele-lint", "lele-bevy-lint", "lele-function-taxonomy"] {
+            assert!(tmp.path().join("bin").join(tool).is_file(), "{tool}");
+        }
     }
 }

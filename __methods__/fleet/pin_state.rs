@@ -34,10 +34,38 @@ pub fn pin_state(fleet: &Fleet, pin: &basic::structs::Pin) -> String {
 
 #[cfg(test)]
 mod tests {
+    use semver::Version;
+
     use super::pin_state;
+    use crate::basic;
+    use crate::testing;
 
     #[test]
     fn test_usage() {
-        let _ = pin_state;
+        let tmp = tempfile::tempdir().unwrap();
+        let dependency = testing::committed_repo(
+            &tmp.path().join("dep"),
+            "dep",
+            Version::new(0, 0, 2),
+            Some("v0.0.2"),
+        );
+        let manifest = dependency.manifests.first().unwrap().clone();
+        let fleet = testing::fleet(tmp.path(), vec![dependency], Vec::new());
+        let linked = basic::structs::Pin {
+            manifest,
+            dependent: String::from("app"),
+            dependency: String::from("dep"),
+            form: basic::enums::PinForm::Path(String::from("../dep")),
+        };
+        let tagged = basic::structs::Pin {
+            form: basic::enums::PinForm::Tag(String::from("v0.0.2")),
+            ..linked.clone()
+        };
+
+        let linked_state = pin_state(&fleet, &linked);
+        let tagged_state = pin_state(&fleet, &tagged);
+
+        assert_eq!(linked_state, "linked");
+        assert_eq!(tagged_state, "ok");
     }
 }

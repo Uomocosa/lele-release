@@ -23,10 +23,24 @@ pub fn stage_version_files(repo: &Repo) -> Result<(), Error> {
 
 #[cfg(test)]
 mod tests {
+    use semver::Version;
+
     use super::stage_version_files;
+    use crate::testing;
 
     #[test]
     fn test_usage() {
-        let _ = stage_version_files;
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = testing::committed_repo(
+            &tmp.path().join("probe"),
+            "probe",
+            Version::new(0, 0, 1),
+            None,
+        );
+
+        let staged = stage_version_files(&repo);
+
+        assert!(staged.is_ok());
+        assert_eq!(repo.untrimmed_status_paths().unwrap(), Vec::<String>::new());
     }
 }

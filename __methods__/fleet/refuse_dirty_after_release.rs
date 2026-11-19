@@ -26,10 +26,24 @@ pub fn refuse_dirty_after_release(
 
 #[cfg(test)]
 mod tests {
+    use semver::Version;
+
     use super::refuse_dirty_after_release;
+    use crate::testing;
 
     #[test]
     fn test_usage() {
-        let _ = refuse_dirty_after_release;
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = testing::committed_repo(
+            &tmp.path().join("probe"),
+            "probe",
+            Version::new(0, 0, 1),
+            Some("v0.0.1"),
+        );
+        let fleet = testing::fleet(tmp.path(), vec![repo], Vec::new());
+
+        let result = refuse_dirty_after_release(&fleet, &[testing::release_step("probe")]);
+
+        assert!(result.is_ok());
     }
 }

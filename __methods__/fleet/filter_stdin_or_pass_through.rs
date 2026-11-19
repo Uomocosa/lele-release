@@ -46,10 +46,46 @@ pub fn filter_stdin_or_pass_through(
 
 #[cfg(test)]
 mod tests {
+    use std::io::Write as _;
+    use std::process::Command;
+    use std::process::Stdio;
+
     use super::filter_stdin_or_pass_through;
+    use crate::PinsMode;
+
+    const CHILD_MARKER: &str = "LELE_RELEASE_TEST_FILTER_STDIN";
 
     #[test]
     fn test_usage() {
-        let _ = filter_stdin_or_pass_through;
+        let Ok(_marker) = std::env::var(CHILD_MARKER) else {
+            let input = "[package]\nname = \"probe\"\nversion = \"0.0.1\"\n";
+            let mut child = Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "--exact",
+                    "methods::fleet::filter_stdin_or_pass_through::tests::test_usage",
+                    "--nocapture",
+                ])
+                .env(CHILD_MARKER, "1")
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .spawn()
+                .unwrap();
+            child
+                .stdin
+                .as_mut()
+                .unwrap()
+                .write_all(input.as_bytes())
+                .unwrap();
+            let output = child.wait_with_output().unwrap();
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            assert!(output.status.success(), "{stdout}");
+            assert!(stdout.contains("name = \"probe\""), "{stdout}");
+            return;
+        };
+        let root = tempfile::tempdir().unwrap();
+
+        let result = filter_stdin_or_pass_through(PinsMode::Smudge, None, root.path());
+
+        assert!(result.is_ok());
     }
 }

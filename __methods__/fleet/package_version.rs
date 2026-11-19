@@ -50,10 +50,28 @@ pub fn package_version(
 
 #[cfg(test)]
 mod tests {
+    use semver::Version;
+
     use super::package_version;
+    use crate::Package;
 
     #[test]
     fn test_usage() {
-        let _ = package_version;
+        let tmp = tempfile::tempdir().unwrap();
+        let manifest = tmp.path().join("Cargo.toml");
+        std::fs::write(
+            &manifest,
+            "[package]\nname = \"probe\"\nversion = \"0.0.3\"\n",
+        )
+        .unwrap();
+        let packages = vec![Package {
+            name: String::from("probe"),
+            manifest: manifest.clone(),
+        }];
+
+        let (found, version) = package_version(&packages, "probe").unwrap();
+
+        assert_eq!(found, manifest);
+        assert_eq!(version, Version::new(0, 0, 3));
     }
 }

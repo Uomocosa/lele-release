@@ -49,10 +49,29 @@ pub fn write_version(repo: &Repo, next: &Version) -> Result<(), Error> {
 
 #[cfg(test)]
 mod tests {
+    use semver::Version;
+
     use super::write_version;
+    use crate::testing;
+
+    const MANIFEST: &str = "[package]\nname = \"probe\"\nversion = \"0.0.1\"\n";
 
     #[test]
     fn test_usage() {
-        let _ = write_version;
+        let tmp = tempfile::tempdir().unwrap();
+        std::fs::write(tmp.path().join("Cargo.toml"), MANIFEST).unwrap();
+        let repo = testing::repo(
+            "probe",
+            tmp.path(),
+            "https://example.com/probe.git",
+            "probe",
+            Version::new(0, 0, 1),
+        );
+
+        let result = write_version(&repo, &Version::new(0, 0, 2));
+
+        assert!(result.is_ok());
+        let written = std::fs::read_to_string(tmp.path().join("Cargo.toml")).unwrap();
+        assert!(written.contains("version = \"0.0.2\""), "{written}");
     }
 }

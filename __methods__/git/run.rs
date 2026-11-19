@@ -26,6 +26,12 @@ mod tests {
 
     #[test]
     fn test_usage() {
-        let _ = run;
+        let dir = tempfile::tempdir().unwrap();
+
+        let initialised = run(dir.path(), &["init", "-q", "-b", "main"]);
+        let missing_head = run(dir.path(), &["rev-parse", "HEAD"]);
+
+        assert!(initialised.is_ok());
+        assert!(missing_head.is_err());
     }
 }

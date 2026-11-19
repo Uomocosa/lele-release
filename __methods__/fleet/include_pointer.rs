@@ -24,6 +24,20 @@ mod tests {
 
     #[test]
     fn test_usage() {
-        let _ = include_pointer;
+        let home = tempfile::tempdir().unwrap();
+
+        include_pointer(home.path()).unwrap();
+
+        let first = std::fs::read_to_string(home.path().join(".gitconfig")).unwrap();
+        assert!(first.contains("lele-pins.gitconfig"), "{first}");
+
+        include_pointer(home.path()).unwrap();
+
+        let repeated = std::fs::read_to_string(home.path().join(".gitconfig")).unwrap();
+        assert_eq!(
+            repeated.matches("lele-pins.gitconfig").count(),
+            1,
+            "{repeated}"
+        );
     }
 }

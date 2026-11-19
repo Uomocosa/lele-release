@@ -22,9 +22,16 @@ pub fn output(dir: &Path, args: &[&str]) -> Result<String, Error> {
 #[cfg(test)]
 mod tests {
     use super::output;
+    use crate::Git;
 
     #[test]
     fn test_usage() {
-        let _ = output;
+        let dir = tempfile::tempdir().unwrap();
+        Git::run(dir.path(), &["init", "-q", "-b", "main"]).unwrap();
+
+        let inside = output(dir.path(), &["rev-parse", "--is-inside-work-tree"]);
+
+        assert_eq!(inside.unwrap(), "true");
+        assert!(output(dir.path(), &["rev-parse", "HEAD"]).is_err());
     }
 }

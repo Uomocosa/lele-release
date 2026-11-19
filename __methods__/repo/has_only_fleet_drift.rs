@@ -15,10 +15,27 @@ pub fn has_only_fleet_drift(repo: &Repo, fleet: &Fleet, relative: &str) -> Resul
 
 #[cfg(test)]
 mod tests {
+    use semver::Version;
+
     use super::has_only_fleet_drift;
+    use crate::testing;
 
     #[test]
     fn test_usage() {
-        let _ = has_only_fleet_drift;
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = testing::committed_repo(
+            &tmp.path().join("probe"),
+            "probe",
+            Version::new(0, 0, 1),
+            None,
+        );
+        let fleet = testing::fleet(tmp.path(), vec![repo], Vec::new());
+        let repo = fleet.repos.first().unwrap();
+
+        let committed = has_only_fleet_drift(repo, &fleet, "Cargo.toml");
+        let missing = has_only_fleet_drift(repo, &fleet, "absent.toml");
+
+        assert!(committed.unwrap());
+        assert!(!missing.unwrap());
     }
 }

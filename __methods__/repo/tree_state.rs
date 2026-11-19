@@ -30,10 +30,23 @@ pub fn tree_state(repo: &Repo) -> String {
 
 #[cfg(test)]
 mod tests {
+    use semver::Version;
+
     use super::tree_state;
+    use crate::testing;
 
     #[test]
     fn test_usage() {
-        let _ = tree_state;
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = testing::committed_repo(
+            &tmp.path().join("probe"),
+            "probe",
+            Version::new(0, 0, 1),
+            None,
+        );
+
+        let state = tree_state(&repo);
+
+        assert_eq!(state, "clean · no upstream");
     }
 }

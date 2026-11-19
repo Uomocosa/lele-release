@@ -26,10 +26,36 @@ pub fn clean_lock(fleet: &Fleet, lock: &Path, input: &str) -> Result<String, Err
 
 #[cfg(test)]
 mod tests {
+    use semver::Version;
+
     use super::clean_lock;
+    use crate::testing;
 
     #[test]
     fn test_usage() {
-        let _ = clean_lock;
+        let tmp = tempfile::tempdir().unwrap();
+        let dependent = testing::committed_repo(
+            &tmp.path().join("dependent"),
+            "dependent",
+            Version::new(0, 0, 1),
+            Some("v0.0.1"),
+        );
+        let dependency = testing::committed_repo(
+            &tmp.path().join("dep"),
+            "dep",
+            Version::new(0, 0, 2),
+            Some("v0.0.2"),
+        );
+        let lock = dependent.dir.join("Cargo.lock");
+        let input = "version = 4\n\n[[package]]\nname = \"dependent\"\nversion = \"0.0.1\"\n\n[[package]]\nname = \"dep\"\nversion = \"0.0.1\"\nsource = \"path+file:///tmp/dep\"\n";
+        let fleet = testing::fleet(tmp.path(), vec![dependent, dependency], Vec::new());
+
+        let cleaned = clean_lock(&fleet, &lock, input).unwrap();
+
+        assert!(cleaned.contains("version = \"0.0.2\""), "{cleaned}");
+        assert!(
+            cleaned.contains("source = \"git+https://example.com/dep?tag=v0.0.2#"),
+            "{cleaned}"
+        );
     }
 }

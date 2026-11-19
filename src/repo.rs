@@ -90,14 +90,22 @@ impl Repo {
 
 #[cfg(test)]
 mod tests {
-    use super::Repo;
+    use semver::Version;
+
+    use crate::testing;
 
     #[test]
     fn test_usage() {
-        let _ = Repo::latest_tag;
-        let _ = Repo::commits_since_tag;
-        let _ = Repo::matches_url;
-        let _ = Repo::ensure_ready;
-        let _ = Repo::release;
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = testing::committed_repo(
+            &tmp.path().join("probe"),
+            "probe",
+            Version::new(0, 0, 2),
+            Some("v0.0.2"),
+        );
+
+        assert_eq!(repo.latest_tag().unwrap(), Some(String::from("v0.0.2")));
+        assert!(repo.matches_url("https://example.com/probe.git"));
+        assert_eq!(repo.version, Version::new(0, 0, 2));
     }
 }

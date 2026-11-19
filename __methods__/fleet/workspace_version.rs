@@ -15,10 +15,19 @@ pub fn workspace_version(document: &DocumentMut) -> Option<Version> {
 
 #[cfg(test)]
 mod tests {
+    use semver::Version;
+    use toml_edit::DocumentMut;
+
     use super::workspace_version;
+
+    const WORKSPACE: &str = "[workspace.package]\nversion = \"0.4.2\"\n";
 
     #[test]
     fn test_usage() {
-        let _ = workspace_version;
+        let document: DocumentMut = WORKSPACE.parse().unwrap();
+
+        let version = workspace_version(&document);
+
+        assert_eq!(version, Some(Version::new(0, 4, 2)));
     }
 }

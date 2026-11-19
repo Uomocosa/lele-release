@@ -3,6 +3,8 @@ use std::path::Path;
 use crate::Git;
 
 pub fn commit_tag(dir: &Path, message: &str, tag: &str) {
+    Git::run(dir, &["config", "user.name", "t"]).unwrap();
+    Git::run(dir, &["config", "user.email", "t@t"]).unwrap();
     Git::run(
         dir,
         &[

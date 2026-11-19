@@ -46,10 +46,45 @@ pub fn clean_manifest_section(
 
 #[cfg(test)]
 mod tests {
+    use semver::Version;
+    use toml_edit::DocumentMut;
+
     use super::clean_manifest_section;
+    use crate::testing;
 
     #[test]
     fn test_usage() {
-        let _ = clean_manifest_section;
+        let tmp = tempfile::tempdir().unwrap();
+        let dependent_dir = tmp.path().join("dependent");
+        let dependent = testing::committed_repo(
+            &dependent_dir,
+            "dependent",
+            Version::new(0, 0, 1),
+            Some("v0.0.1"),
+        );
+        let dependency = testing::committed_repo(
+            &tmp.path().join("dep"),
+            "dep",
+            Version::new(0, 0, 2),
+            Some("v0.0.2"),
+        );
+        let fleet = testing::fleet(tmp.path(), vec![dependent, dependency], Vec::new());
+        let mut document: DocumentMut = "[dependencies]\ndep = { path = \"../dep\" }\n"
+            .parse()
+            .unwrap();
+
+        let touched = clean_manifest_section(
+            &fleet,
+            &mut document,
+            "dependencies",
+            &dependent_dir,
+            "dependent",
+        )
+        .unwrap();
+
+        assert!(touched);
+        let text = document.to_string();
+        assert!(text.contains("tag = \"v0.0.2\""), "{text}");
+        assert!(!text.contains("path ="), "{text}");
     }
 }

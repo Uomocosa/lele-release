@@ -17,10 +17,23 @@ pub fn latest_tag(repo: &Repo) -> Result<Option<String>, Error> {
 
 #[cfg(test)]
 mod tests {
+    use semver::Version;
+
     use super::latest_tag;
+    use crate::testing;
 
     #[test]
     fn test_usage() {
-        let _ = latest_tag;
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = testing::committed_repo(
+            &tmp.path().join("probe"),
+            "probe",
+            Version::new(0, 0, 2),
+            Some("v0.0.2"),
+        );
+
+        let tag = latest_tag(&repo);
+
+        assert_eq!(tag.unwrap(), Some(String::from("v0.0.2")));
     }
 }

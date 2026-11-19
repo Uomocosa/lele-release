@@ -33,9 +33,16 @@ pub fn install_self(
 #[cfg(test)]
 mod tests {
     use super::install_self;
+    use crate::testing;
 
     #[test]
     fn test_usage() {
-        let _ = install_self;
+        let tmp = tempfile::tempdir().unwrap();
+        let fleet = testing::fleet(tmp.path(), Vec::new(), Vec::new());
+
+        let (installed, error) = install_self(&fleet, &[testing::release_step("other")], false);
+
+        assert!(!installed);
+        assert!(error.is_none());
     }
 }

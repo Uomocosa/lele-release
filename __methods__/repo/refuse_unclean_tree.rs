@@ -21,10 +21,28 @@ pub fn refuse_unclean_tree(repo: &Repo, fleet: &Fleet) -> Result<(), Error> {
 
 #[cfg(test)]
 mod tests {
+    use semver::Version;
+
     use super::refuse_unclean_tree;
+    use crate::testing;
 
     #[test]
     fn test_usage() {
-        let _ = refuse_unclean_tree;
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = testing::committed_repo(
+            &tmp.path().join("probe"),
+            "probe",
+            Version::new(0, 0, 1),
+            None,
+        );
+        let fleet = testing::fleet(tmp.path(), vec![repo], Vec::new());
+        let repo = fleet.repos.first().unwrap();
+
+        let clean = refuse_unclean_tree(repo, &fleet);
+        std::fs::write(repo.dir.join("dirty.txt"), "x").unwrap();
+        let dirty = refuse_unclean_tree(repo, &fleet);
+
+        assert!(clean.is_ok());
+        assert!(dirty.is_err());
     }
 }

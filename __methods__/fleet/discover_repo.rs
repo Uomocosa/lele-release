@@ -57,10 +57,25 @@ pub fn discover_repo(dir: &Path) -> Result<Option<Repo>, Error> {
 
 #[cfg(test)]
 mod tests {
+    use semver::Version;
+
     use super::discover_repo;
 
     #[test]
     fn test_usage() {
-        let _ = discover_repo;
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path().join("probe");
+        std::fs::create_dir_all(dir.join("src")).unwrap();
+        std::fs::write(
+            dir.join("Cargo.toml"),
+            "[package]\nname = \"probe\"\nversion = \"0.0.3\"\n",
+        )
+        .unwrap();
+        std::fs::write(dir.join("src/lib.rs"), "").unwrap();
+
+        let discovered = discover_repo(&dir).unwrap().unwrap();
+
+        assert_eq!(discovered.name, "probe");
+        assert_eq!(discovered.version, Version::new(0, 0, 3));
     }
 }

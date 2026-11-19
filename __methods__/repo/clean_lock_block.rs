@@ -46,10 +46,28 @@ pub fn clean_lock_block<S: BuildHasher>(
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
+
+    use semver::Version;
+
     use super::clean_lock_block;
+    use crate::testing;
+
+    const BLOCK: &str = "[[package]]\nname = \"probe\"\nversion = \"0.0.1\"\nsource = \"git+https://example.com/probe\"\n";
 
     #[test]
     fn test_usage() {
-        let _ = clean_lock_block::<std::hash::RandomState>;
+        let repo = testing::repo(
+            "probe",
+            Path::new("/nonexistent/probe"),
+            "",
+            "probe",
+            Version::new(0, 0, 2),
+        );
+
+        let cleaned = clean_lock_block(&repo, BLOCK, &testing::fleet_lock_sources());
+
+        assert!(cleaned.contains("version = \"0.0.2\""), "{cleaned}");
+        assert!(!cleaned.contains("source = "), "{cleaned}");
     }
 }

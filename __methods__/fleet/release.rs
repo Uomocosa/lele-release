@@ -88,10 +88,31 @@ pub fn release(
 
 #[cfg(test)]
 mod tests {
+    use semver::Version;
+
     use super::release;
+    use crate::basic;
+    use crate::testing;
 
     #[test]
     fn test_usage() {
-        let _ = release;
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = testing::committed_repo(
+            &tmp.path().join("probe"),
+            "probe",
+            Version::new(0, 0, 2),
+            Some("v0.0.2"),
+        );
+        let fleet = testing::fleet(tmp.path(), vec![repo], Vec::new());
+
+        let result = release(
+            &fleet,
+            basic::enums::Bump::Patch,
+            &basic::enums::Selection::All,
+            true,
+            true,
+        );
+
+        assert!(result.is_ok());
     }
 }

@@ -4,6 +4,8 @@ pub mod fixtures;
 pub mod queries;
 
 pub use fixtures::commit_tag::commit_tag;
+pub use fixtures::committed_repo::committed_repo;
+pub use fixtures::fleet::fleet;
 pub use fixtures::fleet_lock_sources::fleet_lock_sources;
 pub use fixtures::fleet_lock_versions::fleet_lock_versions;
 pub use fixtures::release_step::release_step;

@@ -17,10 +17,24 @@ pub fn status(fleet: &Fleet) -> Result<(), Error> {
 
 #[cfg(test)]
 mod tests {
+    use semver::Version;
+
     use super::status;
+    use crate::testing;
 
     #[test]
     fn test_usage() {
-        let _ = status;
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = testing::committed_repo(
+            &tmp.path().join("probe"),
+            "probe",
+            Version::new(0, 0, 1),
+            None,
+        );
+        let fleet = testing::fleet(tmp.path(), vec![repo], Vec::new());
+
+        let result = status(&fleet);
+
+        assert!(result.is_ok());
     }
 }

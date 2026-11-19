@@ -15,10 +15,24 @@ pub fn changed_repos(fleet: &Fleet) -> Result<Vec<(String, u64)>, Error> {
 
 #[cfg(test)]
 mod tests {
+    use semver::Version;
+
     use super::changed_repos;
+    use crate::testing;
 
     #[test]
     fn test_usage() {
-        let _ = changed_repos;
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = testing::committed_repo(
+            &tmp.path().join("probe"),
+            "probe",
+            Version::new(0, 0, 1),
+            None,
+        );
+        let fleet = testing::fleet(tmp.path(), vec![repo], Vec::new());
+
+        let changed = changed_repos(&fleet).unwrap();
+
+        assert_eq!(changed, vec![(String::from("probe"), 0)]);
     }
 }

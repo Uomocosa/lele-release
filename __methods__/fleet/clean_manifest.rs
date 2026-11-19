@@ -38,10 +38,38 @@ pub fn clean_manifest(fleet: &Fleet, manifest: &Path, input: &str) -> Result<Str
 
 #[cfg(test)]
 mod tests {
+    use semver::Version;
+
     use super::clean_manifest;
+    use crate::testing;
 
     #[test]
     fn test_usage() {
-        let _ = clean_manifest;
+        let tmp = tempfile::tempdir().unwrap();
+        let dependent = testing::committed_repo(
+            &tmp.path().join("dependent"),
+            "dependent",
+            Version::new(0, 0, 1),
+            Some("v0.0.1"),
+        );
+        let dependency = testing::committed_repo(
+            &tmp.path().join("dep"),
+            "dep",
+            Version::new(0, 0, 2),
+            Some("v0.0.2"),
+        );
+        let manifest = dependent.dir.join("Cargo.toml");
+        let input = "[package]\nname = \"dependent\"\nversion = \"0.0.1\"\n\n[dependencies]\ndep = { path = \"../dep\" }\n";
+        std::fs::write(&manifest, input).unwrap();
+        let fleet = testing::fleet(tmp.path(), vec![dependent, dependency], Vec::new());
+
+        let cleaned = clean_manifest(&fleet, &manifest, input).unwrap();
+
+        assert!(
+            cleaned.contains("git = \"https://example.com/dep\""),
+            "{cleaned}"
+        );
+        assert!(cleaned.contains("tag = \"v0.0.2\""), "{cleaned}");
+        assert!(!cleaned.contains("path ="), "{cleaned}");
     }
 }

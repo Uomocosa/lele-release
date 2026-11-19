@@ -37,9 +37,17 @@ pub fn print_shims(fleet: &Fleet) {
 #[cfg(test)]
 mod tests {
     use super::print_shims;
+    use crate::testing;
 
     #[test]
     fn test_usage() {
-        let _ = print_shims;
+        let tmp = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(tmp.path().join("bin")).unwrap();
+        std::fs::write(tmp.path().join("bin/lele-lint"), "").unwrap();
+        let fleet = testing::fleet(tmp.path(), Vec::new(), Vec::new());
+
+        print_shims(&fleet);
+
+        assert!(fleet.root.join("bin/lele-lint").is_file());
     }
 }

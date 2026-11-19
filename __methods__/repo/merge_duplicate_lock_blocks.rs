@@ -110,7 +110,18 @@ mod tests {
 
     #[test]
     fn test_usage() {
-        let _ = merge_duplicate_lock_blocks;
+        let repo = testing::repo(
+            "probe",
+            Path::new("/nonexistent/probe"),
+            "",
+            "common_types",
+            Version::new(0, 0, 11),
+        );
+        let block = String::from("[[package]]\nname = \"twin\"\nversion = \"1.0.0\"\n\n");
+
+        let merged = merge_duplicate_lock_blocks(&repo, vec![block.clone(), block]);
+
+        assert_eq!(merged.len(), 1);
     }
 
     #[test]

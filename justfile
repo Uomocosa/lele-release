@@ -33,6 +33,20 @@ setup: install
 hooks:
     prek install -t pre-commit -t pre-push -t post-commit
 
+[doc('commit-msg hook: a commit that changes a real lele.toml must carry a Lele-Config-Request: trailer (the user request it implements).')]
+lele-config-guard MSG_FILE:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    changed=$(git diff --cached --name-only | grep -E '(^|/)lele\.toml$' | grep -vE '(^|/)(lele-lint-test-crates|rule_examples|interactions|tests/fixtures)/' || true)
+    [ -z "$changed" ] && exit 0
+    echo "lele.toml changed in this commit:" >&2
+    git diff --cached --stat -- $changed >&2
+    git diff --cached -- $changed | grep -E '^[+-][^+-]' | grep -E 'level|reason|exempt|path|replaced_by|\[' >&2 || true
+    if ! grep -qE '^Lele-Config-Request: .+' "{{ MSG_FILE }}"; then
+        echo "lele.toml changed: add a 'Lele-Config-Request: <what the user asked>' trailer. Agents: only when the user asked for this change in this conversation." >&2
+        exit 1
+    fi
+
 # Show which binary each tool resolves to and its version. A `<fleet>/bin` shim
 # (written by `lele-release setup`) builds the sibling checkout; set
 # LELE_USE_INSTALLED=1 to use the installed binary instead.

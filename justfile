@@ -11,6 +11,7 @@ clippy:
 
 fmt:
     cargo fmt -- --check
+    lele-fmt --check --config lele.toml
 
 test:
     cargo nextest run --all-targets --all-features

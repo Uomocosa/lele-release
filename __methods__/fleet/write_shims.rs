@@ -17,6 +17,11 @@ pub fn write_shims(fleet: &Fleet) -> Result<(), Error> {
             package: "lele-bevy-lint",
         },
         basic::structs::ShimmedTool {
+            tool: "lele-fmt",
+            repo: "lele-rust-linter",
+            package: "lele-lint",
+        },
+        basic::structs::ShimmedTool {
             tool: "lele-function-taxonomy",
             repo: "lele-rust-function-taxonomy",
             package: "lele-rust-function-taxonomy",
@@ -68,7 +73,12 @@ mod tests {
         let result = write_shims(&fleet);
 
         assert!(result.is_ok());
-        for tool in ["lele-lint", "lele-bevy-lint", "lele-function-taxonomy"] {
+        for tool in [
+            "lele-lint",
+            "lele-bevy-lint",
+            "lele-fmt",
+            "lele-function-taxonomy",
+        ] {
             assert!(tmp.path().join("bin").join(tool).is_file(), "{tool}");
         }
     }
